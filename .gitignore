@@ -1,0 +1,11 @@
+node_modules/
+.npm-cache/
+test-dist/
+test-results/
+playwright-report/
+release/
+data.json
+.obsidian/
+.env
+.env.*
+*.log

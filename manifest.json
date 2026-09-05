@@ -1,0 +1,10 @@
+{
+  "id": "better-export",
+  "name": "Better Export",
+  "version": "0.8.1",
+  "minAppVersion": "1.5.0",
+  "description": "Paged PDF export with reusable covers, headers, global templates and offline CSL citations.",
+  "author": "Nanoarcheaum",
+  "authorUrl": "https://github.com/Nanoarcheaum",
+  "isDesktopOnly": true
+}
