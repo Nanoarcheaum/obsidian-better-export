@@ -41,7 +41,7 @@
 
 本插件暂无数据处理功能
 
-至于完成报告时需要的数据处理、图表绘制，可以异步作者合作开发的另一个项目[**SyphonNov**](https://github.com/Feathrior/SyphonNov) 
+至于完成报告时需要的数据处理、图表绘制，可以移步作者合作开发的另一个项目[**SyphonNov**](https://github.com/Feathrior/SyphonNov) 
 
 一个 **可视化超强-交互超爽-上手超快** 的绘图软件
 
