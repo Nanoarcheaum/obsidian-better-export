@@ -1,21 +1,49 @@
 # Better Export
 
-An Obsidian desktop plugin for paginated PDF export, reusable covers and headers, document templates, and offline CSL citations.
+愿景：实现 Obsidian 日常工作流 all in one 的需求
 
 **Author: Nanoarcheaum · Version: 0.8.1 · Public beta**
 
-面向论文和报告写作，在独立窗口中配置版式、封面、版头与引用，预览分页并导出 PDF。当前为公开测试版，尚未完成真实 Obsidian、多主题和跨系统验收，也未进入社区插件市场。
+面向日程实验报告书写，在独立窗口中配置版式、封面、版头与引用，预览分页并导出 PDF。当前为公开测试版。
 
 ## Features / 功能
 
-- A4 / Letter 纸张、字体、字号、颜色、页眉页脚和独立预览缩放。
-- 原生 Markdown 封面和版头，支持 `$x^2$`、`$$\frac{a}{b}$$` 与 `{{字段}}`。
-- 粘贴整页图片封面，可选完整显示或铺满裁切。
-- 独立可展开的全局模板面板，保存字体、版式、封面、版头、链接和引用规则；可选包含文献库。
-- 模板复制、删除、撤销删除；删除后已有文档保留独立版式。
-- 双向链接自定义颜色，以及链接、纯文字、保留 `[[源码]]` 三种导出方式。
-- 离线 CSL 引用格式，支持 Vault 文献笔记和 Zotero CSL JSON / BibTeX / RIS 导入。
+### 1.更好的图像排版
+右键图片可以在md文件中用html方法快捷排版，包括图片缩放、并列放置、居中操作等等
+
+<img width="754" height="388" alt="image" src="https://github.com/user-attachments/assets/a9e840f0-43a0-44e9-8ae8-694b4f2f8d74" />
+
+### 2.更好的文字排版
+右键选中文字也可以快捷设置文字颜色、字号等信息
+
+<img width="590" height="349" alt="image" src="https://github.com/user-attachments/assets/119ba7a3-95f6-4865-a03b-991fb11b60b8" />
+
+### 3.更好的导出
+在左边栏新增了导出按键，点击弹出导出界面，并支持以下基本功能
+
+- 标题、子标题、正文：字号字体颜色设置
+- 纸张配置：横竖构图、页眉页脚页边距、纸面比例、页码设置
+- Obsidian 双向链接自定义颜色，以及链接、纯文字、保留 `[[源码]]` 三种导出方式。
+- **版头功能**：为页面添加版头，**支持导入图片！！！**，且支持保存模版，支持 markdown 符号输入`$x^2$`、`$$\frac{a}{b}$$` 与 `{{字段}}`。 （使用场景：无机分化实验）
+
+<img width="917" height="550" alt="image" src="https://github.com/user-attachments/assets/4989e8c6-0700-40d5-930b-5273754cfbf3" />
+
+- **封面功能**：为页面添加封面，**支持导入图片！！**， 且支持保存模版，支持 markdown 符号输入`$x^2$`、`$$\frac{a}{b}$$` 与 `{{字段}}`。 （使用场景：普物实验）
+
+<img width="960" height="616" alt="image" src="https://github.com/user-attachments/assets/1c01d7f0-3f4f-49f5-818f-c5216353e16f" />
+
+
+- 独立可展开的**全局模板**面板，保存字体、版式、封面、版头、链接和引用规则；
+- **一键引用文献**，支持 Vault 文献笔记和 Zotero CSL JSON / BibTeX / RIS 导入，并生成规范的论文引用格式。
 - 长段落、列表、表格分页续排；无法容纳的内容显示错误并阻止导出。
+
+## Data / 数据处理
+
+本插件暂无数据处理功能
+
+至于完成报告时需要的数据处理、图表绘制，可以异步作者合作开发的另一个项目[**SyphonNov**](https://github.com/Feathrior/SyphonNov) 
+
+一个 **可视化超强-交互超爽-上手超快** 的绘图软件
 
 ## Installation / 安装
 
@@ -26,17 +54,6 @@ An Obsidian desktop plugin for paginated PDF export, reusable covers and headers
 
 建议先用独立测试库体验。仅支持桌面端，声明的最低 Obsidian 版本为 1.5.0；最低版本兼容性尚待实际验证。
 
-## Usage / 使用
-
-打开 Markdown 笔记，点击 **Better Export** 图标或运行“打开 PDF 导出悬浮窗”命令。
-
-顶部 **全局模板** 是独立可展开面板，管理整套配置；下方 **版式 / 封面·版头 / 引用** 三个分页分别调整具体内容。应用全局模板后，本篇可继续独立修改。
-
-封面与版头单元格支持 Markdown 和 LaTeX。点击“粘贴图片作为封面”，在粘贴区按 Ctrl/Cmd+V；图片写入当前笔记配置的附件位置。
-
-引用使用 `[@key]` 或 `[@key, p. 12]`。支持 APA 7、GB/T 7714—2015 顺序编码、Chicago 第 18 版作者—年份。当页文献注释是本页文献列表，不是 Chicago Notes 逐次脚注。
-
-等待“已同步”后点击“导出 PDF”。系统打印选择匹配纸张、100% 缩放，关闭系统额外页眉页脚。
 
 ## Data and limitations / 数据与限制
 
