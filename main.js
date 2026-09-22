@@ -2877,7 +2877,7 @@ var require_citeproc_commonjs = __commonJS({
           }
         }
         txt = txt.replace(/([A-Za-z])\./g, "$1");
-        var number = "";
+        var number2 = "";
         var note = "";
         var thedate = {};
         var rangeDelim;
@@ -2948,16 +2948,16 @@ var require_citeproc_commonjs = __commonJS({
                 }
               }
               if (element.match(/^[0-9]+$/)) {
-                number = element;
+                number2 = element;
               }
-              if (element.toLocaleLowerCase().match(/^bc/) && number) {
-                thedate["year" + suff] = "" + number * -1;
-                number = "";
+              if (element.toLocaleLowerCase().match(/^bc/) && number2) {
+                thedate["year" + suff] = "" + number2 * -1;
+                number2 = "";
                 continue;
               }
-              if (element.toLocaleLowerCase().match(/^ad/) && number) {
-                thedate["year" + suff] = "" + number;
-                number = "";
+              if (element.toLocaleLowerCase().match(/^ad/) && number2) {
+                thedate["year" + suff] = "" + number2;
+                number2 = "";
                 continue;
               }
               if (element.toLocaleLowerCase().match(/(?:mic|tri|hil|eas)/) && !thedate["season" + suff]) {
@@ -2965,9 +2965,9 @@ var require_citeproc_commonjs = __commonJS({
                 continue;
               }
             }
-          if (number) {
-            thedate["day" + suff] = number;
-            number = "";
+          if (number2) {
+            thedate["day" + suff] = number2;
+            number2 = "";
           }
           if (note && !thedate["season" + suff]) {
             thedate["season" + suff] = note.trim();
@@ -7700,7 +7700,7 @@ var require_citeproc_commonjs = __commonJS({
     };
     CSL2.Node["date-part"] = {
       build: function(state, target) {
-        var func, pos, len, first_date, value, value_end, real, have_collapsed, invoked, precondition, known_year, bc, ad, bc_end, ad_end, ready, curr, dcurr, number, num2, formatter, item, blob;
+        var func, pos, len, first_date, value, value_end, real, have_collapsed, invoked, precondition, known_year, bc, ad, bc_end, ad_end, ready, curr, dcurr, number2, num2, formatter, item, blob;
         if (!this.strings.form) {
           this.strings.form = "long";
         }
@@ -7914,23 +7914,23 @@ var require_citeproc_commonjs = __commonJS({
               state2.tmp.has_done_year_suffix = true;
               last_string_output = "x";
               num2 = parseInt(state2.registry.registry[Item.id].disambig.year_suffix, 10);
-              number = new CSL2.NumericBlob(state2, false, num2, this, Item.id);
+              number2 = new CSL2.NumericBlob(state2, false, num2, this, Item.id);
               this.successor_prefix = state2[state2.build.area].opt.layout_delimiter;
               this.splice_prefix = state2[state2.build.area].opt.layout_delimiter;
               formatter = new CSL2.Util.Suffixator(CSL2.SUFFIX_CHARS);
-              number.setFormatter(formatter);
+              number2.setFormatter(formatter);
               if (state2[state2.tmp.area].opt.collapse === "year-suffix-ranged") {
-                number.range_prefix = state2.getTerm("citation-range-delimiter");
+                number2.range_prefix = state2.getTerm("citation-range-delimiter");
               }
               if (state2[state2.tmp.area].opt.cite_group_delimiter) {
-                number.successor_prefix = state2[state2.tmp.area].opt.cite_group_delimiter;
+                number2.successor_prefix = state2[state2.tmp.area].opt.cite_group_delimiter;
               } else if (state2[state2.tmp.area].opt["year-suffix-delimiter"]) {
-                number.successor_prefix = state2[state2.tmp.area].opt["year-suffix-delimiter"];
+                number2.successor_prefix = state2[state2.tmp.area].opt["year-suffix-delimiter"];
               } else {
-                number.successor_prefix = state2[state2.tmp.area].opt.layout_delimiter;
+                number2.successor_prefix = state2[state2.tmp.area].opt.layout_delimiter;
               }
-              number.UGLY_DELIMITER_SUPPRESS_HACK = true;
-              state2.output.append(number, "literal");
+              number2.UGLY_DELIMITER_SUPPRESS_HACK = true;
+              state2.output.append(number2, "literal");
             }
           }
           if (last_string_output && !state2.tmp.group_context.tip.condition) {
@@ -11689,7 +11689,7 @@ var require_citeproc_commonjs = __commonJS({
     };
     CSL2.Node.text = {
       build: function(state, target) {
-        var func, form, plural, id, num2, number, formatter, firstoutput, specialdelimiter, label, suffix, term;
+        var func, form, plural, id, num2, number2, formatter, firstoutput, specialdelimiter, label, suffix, term;
         if (this.postponed_macro) {
           var group_start = CSL2.Util.cloneToken(this);
           group_start.name = "group";
@@ -11761,11 +11761,11 @@ var require_citeproc_commonjs = __commonJS({
                   if (state2.opt.citation_number_slug) {
                     state2.output.append(state2.opt.citation_number_slug, this);
                   } else {
-                    number = new CSL2.NumericBlob(state2, false, num3, this, Item.id);
+                    number2 = new CSL2.NumericBlob(state2, false, num3, this, Item.id);
                     if (state2.tmp.in_cite_predecessor) {
-                      number.suppress_splice_prefix = true;
+                      number2.suppress_splice_prefix = true;
                     }
-                    state2.output.append(number, "literal");
+                    state2.output.append(number2, "literal");
                   }
                 }
               };
@@ -11785,10 +11785,10 @@ var require_citeproc_commonjs = __commonJS({
                   if (state2[state2.tmp.area].opt.cite_group_delimiter) {
                     this.successor_prefix = state2[state2.tmp.area].opt.cite_group_delimiter;
                   }
-                  number = new CSL2.NumericBlob(state2, false, num2, this, Item.id);
+                  number2 = new CSL2.NumericBlob(state2, false, num2, this, Item.id);
                   formatter = new CSL2.Util.Suffixator(CSL2.SUFFIX_CHARS);
-                  number.setFormatter(formatter);
-                  state2.output.append(number, "literal");
+                  number2.setFormatter(formatter);
+                  state2.output.append(number2, "literal");
                   firstoutput = false;
                   for (var i = 0, ilen = state2.tmp.group_context.mystack.length; i < ilen; i++) {
                     var flags = state2.tmp.group_context.mystack[i];
@@ -19001,6 +19001,59 @@ __export(main_exports, {
 });
 module.exports = __toCommonJS(main_exports);
 
+// src/cover-images.ts
+var number = (value, fallback, min, max) => {
+  const n = Number(value);
+  return Math.min(max, Math.max(min, Number.isFinite(n) ? n : fallback));
+};
+function normalizeCoverImage(image) {
+  const width = number(image.width, 50, 1, 100), height = number(image.height, 50, 1, 100);
+  return {
+    id: image.id || crypto.randomUUID(),
+    path: String(image.path ?? ""),
+    width,
+    height,
+    x: number(image.x, 0, 0, 100 - width),
+    y: number(image.y, 0, 0, 100 - height),
+    fit: image.fit === "cover" ? "cover" : "contain"
+  };
+}
+function coverImages(template) {
+  if (Array.isArray(template.images))
+    return template.images.map(normalizeCoverImage);
+  return template.imagePath ? [
+    normalizeCoverImage({
+      id: "legacy-cover-image",
+      path: template.imagePath,
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 100,
+      fit: template.imageFit ?? "contain"
+    })
+  ] : [];
+}
+function addCoverImages(template, paths) {
+  const images = coverImages(template);
+  const initial = images.length === 0, cols = Math.ceil(Math.sqrt(paths.length)), rows = Math.ceil(paths.length / cols);
+  for (const [index, path] of paths.entries()) {
+    const full = images.length === 0 && paths.length === 1 && template.mode === "image", tile = initial && paths.length > 1;
+    images.push(
+      normalizeCoverImage({
+        id: crypto.randomUUID(),
+        path,
+        x: tile ? index % cols * 100 / cols : full ? 0 : 25,
+        y: tile ? Math.floor(index / cols) * 100 / rows : full ? 0 : 25,
+        width: tile ? 100 / cols : full ? 100 : 50,
+        height: tile ? 100 / rows : full ? 100 : 50,
+        fit: "contain"
+      })
+    );
+  }
+  template.images = images;
+  template.imagePath = "";
+}
+
 // src/markdown-options.ts
 function mapProse(source, transform) {
   const protectedParts = /(^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)|^ {0,3}`{3,}[^\n]*\n[\s\S]*?^ {0,3}`{3,}[^\n]*(?:\n|$)|^ {0,3}~{3,}[^\n]*\n[\s\S]*?^ {0,3}~{3,}[^\n]*(?:\n|$)|^ {4}[^\n]*(?:\n|$)|`+[^`]*`+|\$\$[\s\S]*?\$\$|(?<!\\)\$(?:\\.|[^$\n])+?\$|<!--[\s\S]*?-->|<[^>]*>|\\[\s\S])/gm;
@@ -19182,24 +19235,24 @@ ${p.keepFiguresTogether ? ".better-export-document .image-embed, .better-export-
 `;
 }
 function normalized(profile) {
-  const number = (value, min, max) => Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
+  const number2 = (value, min, max) => Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
   const color2 = (value, fallback) => /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
   return {
     ...profile,
-    marginTop: number(profile.marginTop, 5, 60),
-    marginRight: number(profile.marginRight, 5, 60),
-    marginBottom: number(profile.marginBottom, 5, 60),
-    marginLeft: number(profile.marginLeft, 5, 60),
-    bodySize: number(profile.bodySize, 7, 24),
-    lineHeight: number(profile.lineHeight, 1, 3),
-    paragraphSpacing: number(profile.paragraphSpacing, 0, 30),
-    firstLineIndent: number(profile.firstLineIndent, 0, 4),
-    h1Size: number(profile.h1Size, 10, 48),
-    h2Size: number(profile.h2Size, 10, 42),
-    h3Size: number(profile.h3Size, 9, 36),
-    h4Size: number(profile.h4Size, 8, 30),
-    h5Size: number(profile.h5Size, 8, 26),
-    h6Size: number(profile.h6Size, 8, 24),
+    marginTop: number2(profile.marginTop, 5, 60),
+    marginRight: number2(profile.marginRight, 5, 60),
+    marginBottom: number2(profile.marginBottom, 5, 60),
+    marginLeft: number2(profile.marginLeft, 5, 60),
+    bodySize: number2(profile.bodySize, 7, 24),
+    lineHeight: number2(profile.lineHeight, 1, 3),
+    paragraphSpacing: number2(profile.paragraphSpacing, 0, 30),
+    firstLineIndent: number2(profile.firstLineIndent, 0, 4),
+    h1Size: number2(profile.h1Size, 10, 48),
+    h2Size: number2(profile.h2Size, 10, 42),
+    h3Size: number2(profile.h3Size, 9, 36),
+    h4Size: number2(profile.h4Size, 8, 30),
+    h5Size: number2(profile.h5Size, 8, 26),
+    h6Size: number2(profile.h6Size, 8, 24),
     textColor: color2(profile.textColor, DEFAULT_PROFILE.textColor),
     headingColor: color2(profile.headingColor, DEFAULT_PROFILE.headingColor),
     linkColor: color2(profile.linkColor, DEFAULT_PROFILE.linkColor),
@@ -19321,6 +19374,7 @@ function normalizeCover(template) {
     mode: template.mode === "image" ? "image" : "grid",
     imagePath: String(template.imagePath ?? ""),
     imageFit: template.imageFit === "cover" ? "cover" : "contain",
+    images: coverImages(template),
     showPageNumber: Boolean(template.showPageNumber),
     rows: normalizeRows(template.rows)
   };
@@ -19368,7 +19422,7 @@ function normalizeRows(rows) {
   ];
 }
 function clampGap(value) {
-  return Math.max(0, Math.min(80, Number(value) || 0));
+  return Math.max(0, Math.min(400, Number(value) || 0));
 }
 
 // src/citation-syntax.ts
@@ -20763,7 +20817,8 @@ var import_obsidian = require("obsidian");
 
 // src/media-layout.ts
 var MEDIA_SOURCE = String.raw`!\[\[[^\]\n]+\]\]|!\[[^\]\n]*\]\((?:[^()\n]|\([^\n)]*\))+\)`;
-var AI4D_TOKEN = /^better-export-(?:media|align-(?:left|center|right)|width-(?:auto|25|33|50|66|75|100)|row|cols-[1-4]|gap-[sml]|crop)$/;
+var AI4D_TOKEN = /^better-export-(?:media|align-(?:left|center|right)|width-(?:auto|25|33|50|66|75|100)|row|cols-[1-4]|gap-[sml]|crop|weight-\d{1,4}|height-\d{1,4}|equal)$/;
+var ADJUST_TOKEN = /^better-export-(?:weight-\d{1,4}|height-\d{1,4}|equal)$/;
 function mediaEmbeds(markdown) {
   return [...markdown.matchAll(new RegExp(MEDIA_SOURCE, "g"))].filter((match) => isMedia(match[0])).map((match) => match[0]);
 }
@@ -20772,17 +20827,116 @@ function isMedia(embed) {
     embed
   );
 }
+function mediaOnly(source) {
+  if (!mediaEmbeds(source).length) return false;
+  return !source.replace(
+    new RegExp(MEDIA_SOURCE, "g"),
+    (embed) => isMedia(embed) ? "" : embed
+  ).trim();
+}
+function adjacentMediaBlock(lines, line) {
+  if (!mediaOnly(lines[line] ?? "")) return null;
+  let from = line, to = line;
+  const scan = (direction) => {
+    let cursor = line + direction, blanks = 0;
+    while (cursor >= 0 && cursor < lines.length) {
+      const source2 = lines[cursor] ?? "";
+      if (!source2.trim()) {
+        if (++blanks > 2) break;
+        cursor += direction;
+        continue;
+      }
+      if (!mediaOnly(source2)) break;
+      direction < 0 ? from = cursor : to = cursor;
+      blanks = 0;
+      cursor += direction;
+    }
+  };
+  scan(-1);
+  scan(1);
+  const source = lines.slice(from, to + 1).filter((value) => value.trim()).join("\n"), count = mediaEmbeds(source).length;
+  return { from, to, source, count };
+}
+function groupRenderedMediaRows(root) {
+  const rowMedia = (paragraph) => {
+    if (!paragraph.matches("p") || paragraph.textContent?.trim()) return [];
+    const children = Array.from(paragraph.children);
+    if (!children.length || children.some(
+      (child) => !child.matches(
+        '.internal-embed[alt*="better-export-row"],img[alt*="better-export-row"]'
+      )
+    ))
+      return [];
+    return children;
+  };
+  const signature = (media) => (media.getAttribute("alt") ?? "").split(/\s+/).filter((token) => /better-export-(?:cols-[1-4]|gap-[sml])/.test(token)).join(" ");
+  for (const first of Array.from(root.querySelectorAll("p"))) {
+    const media = rowMedia(first);
+    if (!media.length) continue;
+    for (const node of Array.from(first.childNodes))
+      if (node.nodeType === Node.TEXT_NODE && !node.textContent?.trim())
+        node.remove();
+    const layout = signature(media[0]);
+    let next = first.nextElementSibling;
+    while (next) {
+      const following = rowMedia(next);
+      if (!following.length || following.some((item) => signature(item) !== layout))
+        break;
+      const after = next.nextElementSibling;
+      for (const item of following) first.append(item);
+      next.remove();
+      next = after;
+    }
+  }
+}
 function readMediaLayout(source) {
+  const columns = Number(
+    source.match(/better-export-cols-([1-4])/)?.[1] ?? 1
+  );
   return {
-    align: source.match(/better-export-align-(left|center|right)/)?.[1] ?? "center",
-    width: source.match(
-      /better-export-width-(auto|25|33|50|66|75|100)/
-    )?.[1] ?? "75",
-    columns: Number(
-      source.match(/better-export-cols-([1-4])/)?.[1] ?? 1
-    ),
+    align: columns > 1 ? "center" : source.match(/better-export-align-(left|center|right)/)?.[1] ?? "center",
+    width: columns > 1 ? "100" : source.match(/better-export-width-(auto|25|33|50|66|75|100)/)?.[1] ?? "75",
+    columns,
     gap: source.match(/better-export-gap-([sml])/)?.[1] ?? "m",
     crop: source.includes("better-export-crop")
+  };
+}
+function readMediaAdjustment(source) {
+  return {
+    weight: clamp(Number(source.match(/better-export-weight-(\d{1,4})/)?.[1] ?? 1e3), 200, 5e3),
+    height: source.match(/better-export-height-(\d{1,4})/)?.[1] ? clamp(Number(source.match(/better-export-height-(\d{1,4})/)?.[1]), 80, 1200) : null,
+    equal: source.includes("better-export-equal")
+  };
+}
+function setMediaAdjustment(embed, adjustment) {
+  const tokens = [
+    ...adjustment.weight === 1e3 ? [] : [`better-export-weight-${clamp(Math.round(adjustment.weight), 200, 5e3)}`],
+    ...adjustment.height === null ? [] : [`better-export-height-${clamp(Math.round(adjustment.height), 80, 1200)}`],
+    ...adjustment.equal ? ["better-export-equal"] : []
+  ];
+  if (embed.startsWith("![[")) {
+    const parts = embed.slice(3, -2).split("|");
+    const target = parts.shift() ?? "";
+    const label = replaceAdjustment(parts.join(" "), tokens);
+    return `![[${target}${label ? "|" + label : ""}]]`;
+  }
+  const match = embed.match(/^!\[([^\]]*)\](\([\s\S]*\))$/);
+  if (!match) return embed;
+  return `![${replaceAdjustment(match[1] ?? "", tokens)}]${match[2]}`;
+}
+function alignMediaGroup(markdown) {
+  const embeds = mediaEmbeds(markdown);
+  if (embeds.length < 2) return null;
+  let index = 0;
+  const aligned = embeds.map(
+    (embed) => setMediaAdjustment(embed, { weight: 1e3, height: null, equal: true })
+  );
+  return {
+    markdown: markdown.replace(
+      new RegExp(MEDIA_SOURCE, "g"),
+      (embed) => isMedia(embed) ? aligned[index++] ?? embed : embed
+    ),
+    count: embeds.length
   };
 }
 function clearMediaLayout(source) {
@@ -20823,8 +20977,10 @@ function formatMediaLayout(markdown, options) {
 function decorateEmbed(embed, options) {
   const tokens = [
     "better-export-media",
-    `better-export-align-${options.align}`,
-    `better-export-width-${options.width}`,
+    ...options.columns === 1 ? [
+      `better-export-align-${options.align}`,
+      `better-export-width-${options.width}`
+    ] : [],
     ...options.columns > 1 ? [
       "better-export-row",
       `better-export-cols-${options.columns}`,
@@ -20843,6 +20999,15 @@ function decorateEmbed(embed, options) {
 }
 function cleanLabel(label) {
   return label.split(/\s+/).filter((token) => token && !AI4D_TOKEN.test(token)).join(" ");
+}
+function replaceAdjustment(label, tokens) {
+  return [
+    ...label.split(/\s+/).filter((token) => token && !ADJUST_TOKEN.test(token)),
+    ...tokens
+  ].join(" ");
+}
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, Number.isFinite(value) ? value : min));
 }
 
 // src/citations.ts
@@ -21198,6 +21363,7 @@ var DEFAULTS = {
   documentCitationOptions: {},
   hideAttachmentFolders: true,
   attachmentFolderName: "",
+  mediaBorderRadius: 10,
   exportProfile: DEFAULT_PROFILE,
   citationStyle: "apa7",
   citationPlacement: "bibliography",
@@ -21216,6 +21382,7 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
     super(...arguments);
     this.settings = DEFAULTS;
     this.folderStyle = null;
+    this.mediaStyle = null;
     this.panel = null;
     this.popover = null;
     this.opening = 0;
@@ -21223,6 +21390,7 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
   }
   async onload() {
     await this.loadSettings();
+    this.applyMediaAppearance();
     this.addRibbonIcon(
       "file-output",
       "Better Export",
@@ -21250,6 +21418,21 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
         '\n\n<div class="better-export-page-break"></div>\n\n'
       )
     });
+    this.registerMarkdownPostProcessor((element) => {
+      groupRenderedMediaRows(element);
+      this.enhanceMediaRows(element);
+    });
+    this.registerDomEvent(
+      document,
+      "pointerover",
+      (event) => {
+        const media = event.target?.closest(
+          '.internal-embed[alt*="better-export-row"]'
+        );
+        if (media) this.enhanceMediaRows(media.parentElement ?? media);
+      },
+      true
+    );
     this.registerDomEvent(
       document,
       "contextmenu",
@@ -21260,6 +21443,14 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
       document,
       "pointerdown",
       (e) => {
+        const handle = e.target?.closest(
+          ".better-export-media-resize-handle"
+        );
+        const media = handle?.parentElement;
+        if (media) {
+          this.startMediaResize(e, media);
+          return;
+        }
         if (this.popover && !e.target?.closest(".better-export-context-toolbar"))
           this.closePopover();
       },
@@ -21306,6 +21497,9 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
           )
         ]) {
           template.logoPath = remap(template.logoPath || "");
+          if ("images" in template)
+            for (const image of template.images ?? [])
+              image.path = remap(image.path);
           if ("imagePath" in template)
             template.imagePath = remap(template.imagePath || "");
         }
@@ -21324,6 +21518,7 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
     this.panel?.close();
     this.closePopover();
     this.folderStyle?.remove();
+    this.mediaStyle?.remove();
     document.body.removeClass("better-export-printing");
   }
   async loadSettings() {
@@ -21346,6 +21541,10 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
       documentCoverIds: s?.documentCoverIds ?? {},
       documentCoverValues: s?.documentCoverValues ?? {}
     };
+    this.settings.mediaBorderRadius = Math.min(
+      32,
+      Math.max(0, Number(this.settings.mediaBorderRadius) || 0)
+    );
   }
   async save() {
     const snapshot = JSON.parse(JSON.stringify(this.settings));
@@ -21367,6 +21566,16 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
     const q = n.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
     this.folderStyle = document.head.createEl("style");
     this.folderStyle.textContent = `.nav-folder-title[data-path="${q}"],.nav-folder-title[data-path="${q}"]+.nav-folder-children,.nav-folder-title[data-path$="/${q}"],.nav-folder-title[data-path$="/${q}"]+.nav-folder-children{display:none!important}`;
+  }
+  applyMediaAppearance() {
+    const radius = Math.min(
+      32,
+      Math.max(0, Number(this.settings.mediaBorderRadius) || 0)
+    );
+    this.settings.mediaBorderRadius = radius;
+    this.mediaStyle?.remove();
+    this.mediaStyle = document.head.createEl("style");
+    this.mediaStyle.textContent = `body{--be-media-radius:${radius}px}`;
   }
   folderName() {
     if (this.settings.attachmentFolderName.trim())
@@ -21424,6 +21633,105 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
     e.setCursor({ line: matches[0], ch: 0 });
     return true;
   }
+  enhanceMediaRows(root) {
+    const selector = '.internal-embed[alt*="better-export-row"]';
+    const media = [
+      ...root.matches?.(selector) ? [root] : [],
+      ...Array.from(root.querySelectorAll(selector))
+    ];
+    for (const item of media) {
+      const adjustment = readMediaAdjustment(item.getAttribute("alt") ?? "");
+      item.style.setProperty("--be-media-weight", String(adjustment.weight));
+      item.style.removeProperty("--be-media-height");
+      item.toggleClass("is-better-export-equal", adjustment.equal);
+      if (item.querySelector(":scope > .better-export-media-resize-handle"))
+        continue;
+      const handle = item.createDiv({
+        cls: "better-export-media-resize-handle",
+        attr: { "aria-label": "\u62D6\u52A8\u7B49\u6BD4\u8C03\u6574\u56FE\u7247", role: "slider" }
+      });
+      handle.title = "\u62D6\u52A8\u7B49\u6BD4\u8C03\u6574\u56FE\u7247";
+    }
+  }
+  startMediaResize(event, media) {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.closePopover();
+    const row = media.parentElement;
+    if (!row) return;
+    const items = Array.from(
+      row.querySelectorAll(
+        ':scope > .internal-embed[alt*="better-export-row"]'
+      )
+    );
+    if (items.length < 2) return;
+    const start = readMediaAdjustment(media.getAttribute("alt") ?? ""), startBox = media.getBoundingClientRect(), rowBox = row.getBoundingClientRect(), gap = Number.parseFloat(getComputedStyle(row).gap || "0") || 0, available = Math.max(1, rowBox.width - gap * (items.length - 1)), weights = items.map(
+      (item) => readMediaAdjustment(item.getAttribute("alt") ?? "").weight
+    ), otherWeight = Math.max(
+      1,
+      weights.reduce((sum, value) => sum + value, 0) - start.weight
+    ), aspect = startBox.width / Math.max(1, startBox.height), originX = event.clientX, originY = event.clientY;
+    let next = { ...start, height: null, equal: false };
+    media.addClass("is-better-export-resizing");
+    media.setAttribute(
+      "alt",
+      (media.getAttribute("alt") ?? "").replace(/\s*better-export-equal\b/g, "").trim()
+    );
+    media.removeClass("is-better-export-equal");
+    const move = (pointer) => {
+      const deltaX = pointer.clientX - originX, deltaFromY = (pointer.clientY - originY) * aspect, delta = Math.abs(deltaX) >= Math.abs(deltaFromY) ? deltaX : deltaFromY, ratio = Math.min(
+        0.9,
+        Math.max(0.1, (startBox.width + delta) / available)
+      );
+      next = {
+        weight: Math.round(ratio * otherWeight / (1 - ratio)),
+        height: null,
+        equal: false
+      };
+      media.style.setProperty("--be-media-weight", String(next.weight));
+      media.style.removeProperty("--be-media-height");
+    };
+    const finish = () => {
+      document.removeEventListener("pointermove", move, true);
+      document.removeEventListener("pointerup", finish, true);
+      document.removeEventListener("pointercancel", finish, true);
+      media.removeClass("is-better-export-resizing");
+      this.saveMediaAdjustment(media, next);
+    };
+    document.addEventListener("pointermove", move, true);
+    document.addEventListener("pointerup", finish, true);
+    document.addEventListener("pointercancel", finish, true);
+  }
+  saveMediaAdjustment(media, adjustment) {
+    const view = this.app.workspace.getActiveViewOfType(import_obsidian.MarkdownView);
+    if (!view) return;
+    const raw = media.getAttribute("src") ?? media.getAttribute("data-href") ?? "";
+    let reference = raw;
+    try {
+      reference = decodeURIComponent(raw).replace(/\\/g, "/").split("?")[0] ?? raw;
+    } catch {
+    }
+    const name = reference.split("/").at(-1) ?? reference, matches = [];
+    for (let line = 0; line < view.editor.lineCount(); line++)
+      for (const embed of mediaEmbeds(view.editor.getLine(line)))
+        if (embed.includes(reference) || embed.includes(name))
+          matches.push({ line, embed });
+    if (matches.length !== 1) {
+      new import_obsidian.Notice("\u65E0\u6CD5\u552F\u4E00\u5B9A\u4F4D\u8FD9\u5F20\u56FE\u7247\uFF0C\u8BF7\u5728\u6B63\u6587\u4E2D\u53F3\u952E\u56FE\u7247\u540E\u518D\u8BD5");
+      return;
+    }
+    const match = matches[0], source = view.editor.getLine(match.line), updated = source.replace(
+      match.embed,
+      setMediaAdjustment(match.embed, adjustment)
+    );
+    view.editor.replaceRange(
+      updated,
+      { line: match.line, ch: 0 },
+      { line: match.line, ch: source.length }
+    );
+    new import_obsidian.Notice("\u56FE\u7247\u5C3A\u5BF8\u5DF2\u4FDD\u5B58");
+  }
   basePopover(x, y, title) {
     this.closePopover();
     const p = document.body.createDiv({ cls: "better-export-context-toolbar" });
@@ -21448,19 +21756,24 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
       ...src.includes("better-export-media") ? readMediaLayout(src) : {}
     };
     const p = this.basePopover(x, y, "\u5A92\u4F53\u6392\u7248");
-    select(
+    let syncMode = () => {
+    };
+    const columns = select(
       p,
       { "1": "1\u5217", "2": "2\u5217", "3": "3\u5217", "4": "4\u5217" },
       String(o.columns),
-      (v) => o.columns = Number(v)
+      (v) => {
+        o.columns = Number(v);
+        syncMode();
+      }
     );
-    select(
+    const alignment = select(
       p,
       { left: "\u5DE6", center: "\u4E2D", right: "\u53F3" },
       o.align,
       (v) => o.align = v
     );
-    select(
+    const width = select(
       p,
       {
         auto: "\u539F\u59CB",
@@ -21474,6 +21787,19 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
       o.width,
       (v) => o.width = v
     );
+    const modeHelp = p.createEl("small", {
+      cls: "better-export-media-help"
+    });
+    syncMode = () => {
+      const grouped = o.columns > 1;
+      alignment.disabled = grouped;
+      width.disabled = grouped;
+      columns.title = grouped ? "\u76F8\u90BB\u56FE\u7247\u5C06\u5408\u5E76\u4E3A\u540C\u4E00\u7EC4" : "\u5355\u5F20\u56FE\u7247";
+      modeHelp.setText(
+        grouped ? "\u591A\u5217\u4F1A\u5408\u5E76\u76F8\u90BB\u56FE\u7247\uFF1B\u62D6\u52A8\u53F3\u4E0B\u89D2\u53EF\u7B49\u6BD4\u7F29\u653E\uFF0C\u4E00\u952E\u5BF9\u9F50\u53EF\u6062\u590D\u6574\u9F50\u7B49\u9AD8\u3002" : "\u5355\u5217\u53EF\u8BBE\u7F6E\u56FE\u7247\u5BBD\u5EA6\u548C\u5DE6\u53F3\u5BF9\u9F50\u3002"
+      );
+    };
+    syncMode();
     select(
       p,
       { s: "\u7A84", m: "\u4E2D", l: "\u5BBD" },
@@ -21486,6 +21812,35 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
     ck.checked = o.crop;
     l.appendText("4:3");
     ck.onchange = () => o.crop = ck.checked;
+    const apply = (align = false) => {
+      try {
+        if ((selected ? e.getRange(from, to) : e.getLine(c.line)) !== src) {
+          new import_obsidian.Notice("\u9009\u533A\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9\u540E\u6392\u7248");
+          return;
+        }
+        let source = src, replaceFrom = selected ? from : { line: c.line, ch: 0 }, replaceTo = selected ? to : { line: c.line, ch: src.length };
+        if (!selected && o.columns > 1 && count === 1) {
+          const lines = Array.from(
+            { length: e.lineCount() },
+            (_, line) => e.getLine(line)
+          ), block = adjacentMediaBlock(lines, c.line);
+          if (!block || block.count < 2) {
+            new import_obsidian.Notice("\u591A\u5217\u6392\u7248\u81F3\u5C11\u9700\u8981\u4E24\u5F20\u76F8\u90BB\u56FE\u7247");
+            return;
+          }
+          source = block.source;
+          replaceFrom = { line: block.from, ch: 0 };
+          replaceTo = { line: block.to, ch: e.getLine(block.to).length };
+        }
+        let result = formatMediaLayout(source, o);
+        if (!result) return;
+        if (align) result = alignMediaGroup(result.markdown) ?? result;
+        selected ? e.replaceRange(result.markdown, from, to) : e.replaceRange(result.markdown, replaceFrom, replaceTo);
+        this.closePopover();
+      } catch (err) {
+        new import_obsidian.Notice(err instanceof Error ? err.message : "\u6392\u7248\u5931\u8D25");
+      }
+    };
     button(p, "\u6E05\u9664\u6392\u7248", () => {
       if ((selected ? e.getRange(from, to) : e.getLine(c.line)) !== src) {
         new import_obsidian.Notice("\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9");
@@ -21498,29 +21853,12 @@ var BetterExportPlugin = class extends import_obsidian.Plugin {
       );
       this.closePopover();
     });
-    button(
-      p,
-      "\u5E94\u7528",
-      () => {
-        try {
-          const r = formatMediaLayout(src, o);
-          if (!r) return;
-          if ((selected ? e.getRange(from, to) : e.getLine(c.line)) !== src) {
-            new import_obsidian.Notice("\u9009\u533A\u5185\u5BB9\u5DF2\u53D8\u5316\uFF0C\u8BF7\u91CD\u65B0\u9009\u62E9\u540E\u6392\u7248");
-            return;
-          }
-          selected ? e.replaceRange(r.markdown, from, to) : e.replaceRange(
-            r.markdown,
-            { line: c.line, ch: 0 },
-            { line: c.line, ch: src.length }
-          );
-          this.closePopover();
-        } catch (err) {
-          new import_obsidian.Notice(err instanceof Error ? err.message : "\u6392\u7248\u5931\u8D25");
-        }
-      },
-      true
-    );
+    const alignButton = button(p, "\u4E00\u952E\u5BF9\u9F50", () => apply(true));
+    alignButton.disabled = o.columns === 1;
+    columns.addEventListener("change", () => {
+      alignButton.disabled = o.columns === 1;
+    });
+    button(p, "\u5E94\u7528", () => apply(), true);
   }
   textPopover(e, x = innerWidth / 2, y = innerHeight / 2) {
     const from = e.getCursor("from"), to = e.getCursor("to");
@@ -21595,6 +21933,7 @@ var ExportPanel = class extends import_obsidian.Component {
     this.ready = false;
     this.noteEntries = /* @__PURE__ */ new Map();
     this.printButton = null;
+    this.systemPrintButton = null;
     this.renderChild = null;
     this.printCleanup = null;
     this.targetView = null;
@@ -21762,7 +22101,8 @@ var ExportPanel = class extends import_obsidian.Component {
       });
     };
   }
-  sidebar() {
+  sidebar(resetScroll = false) {
+    const scrollTop = resetScroll ? 0 : this.side.scrollTop;
     this.el.querySelector(".better-export-image-paste")?.remove();
     this.side.empty();
     const library = this.side.createEl("details", {
@@ -21792,7 +22132,7 @@ var ExportPanel = class extends import_obsidian.Component {
       });
       b.onclick = () => {
         this.tab = k;
-        this.sidebar();
+        this.sidebar(true);
       };
     }
     this.tab === "layout" ? this.layout() : this.tab === "header" ? this.documentFurniture() : this.citations();
@@ -21802,6 +22142,7 @@ var ExportPanel = class extends import_obsidian.Component {
       await this.plugin.save();
       new import_obsidian.Notice("\u5DF2\u4FDD\u5B58\u9ED8\u8BA4\u7248\u5F0F");
     });
+    this.systemPrintButton = button(a, "\u7CFB\u7EDF\u6253\u5370", () => void this.systemPrint());
     this.printButton = button(a, "\u5BFC\u51FA PDF", () => void this.print(), true);
     this.updatePrintButton();
     const brand = this.side.createEl("a", {
@@ -21811,6 +22152,7 @@ var ExportPanel = class extends import_obsidian.Component {
     });
     brand.target = "_blank";
     if (this.tab === "cite") this.refreshCitationAudit();
+    this.side.scrollTop = scrollTop;
   }
   layout() {
     group(this.side, "\u94FE\u63A5", (el) => {
@@ -22248,7 +22590,8 @@ var ExportPanel = class extends import_obsidian.Component {
       (el) => this.gridEditor(
         el,
         template.rows,
-        (change, rebuild) => this.updateHeader((t) => change(t.rows), rebuild)
+        (change, rebuild) => this.updateHeader((t) => change(t.rows), rebuild),
+        false
       )
     );
     const fields = headerFields(template);
@@ -22335,21 +22678,21 @@ var ExportPanel = class extends import_obsidian.Component {
     button(actions, "\u65B0\u5EFA\u7A7A\u767D", () => void this.createCover(blankCover()));
     button(
       actions,
-      "\u7C98\u8D34\u56FE\u7247\u4F5C\u4E3A\u5C01\u9762",
-      () => this.imagePasteWindow("\u6574\u9875\u5C01\u9762", async (path) => {
-        if (this.currentCover())
-          this.updateCover((t) => {
-            t.mode = "image";
-            t.imagePath = path;
-          }, true);
-        else
-          await this.createCover({
-            ...blankCover(),
-            mode: "image",
-            imagePath: path,
-            imageFit: "contain"
-          });
-      })
+      "\u6DFB\u52A0\u5C01\u9762\u56FE\u7247",
+      () => this.imagePasteWindow(
+        "\u5C01\u9762\u56FE\u7247",
+        () => {
+        },
+        async (paths) => {
+          if (this.currentCover())
+            this.updateCover((t) => addCoverImages(t, paths), true);
+          else {
+            const t = { ...blankCover(), mode: "image" };
+            addCoverImages(t, paths);
+            await this.createCover(t);
+          }
+        }
+      )
     );
     const template = this.currentCover();
     if (!template) return;
@@ -22385,13 +22728,22 @@ var ExportPanel = class extends import_obsidian.Component {
         template.name,
         (v) => this.updateCover((t) => t.name = v)
       );
-      if (template.mode !== "image")
+      if (template.mode !== "image" && template.logoPath) {
         this.imageControl(
           el,
           "\u5C01\u9762\u56FE\u7247 / \u5FBD\u6807",
           template.logoPath,
           (path) => this.updateCover((t) => t.logoPath = path, true)
         );
+        button(
+          el,
+          "\u5C06\u65E7\u5FBD\u6807\u8F6C\u4E3A\u53EF\u6392\u7248\u56FE\u7247",
+          () => this.updateCover((t) => {
+            addCoverImages(t, [t.logoPath]);
+            t.logoPath = "";
+          }, true)
+        );
+      }
       toggleSetting(
         el,
         "\u663E\u793A\u5C01\u9762\u9875\u7801",
@@ -22409,25 +22761,107 @@ var ExportPanel = class extends import_obsidian.Component {
           t.mode = v;
         }, true)
       );
-      if (template.mode === "image") {
-        this.imageControl(
-          el,
-          "\u6574\u9875\u5C01\u9762",
-          template.imagePath ?? "",
-          (path) => this.updateCover((t) => {
-            t.imagePath = path;
-          }, true)
-        );
+    });
+    group(this.side, "\u5C01\u9762\u56FE\u7247\u6392\u7248", (el) => {
+      el.createEl("p", {
+        cls: "better-export-help",
+        text: "\u5C3A\u5BF8\u548C\u4F4D\u7F6E\u4EE5\u6574\u5F20\u5C01\u9762\u7684\u767E\u5206\u6BD4\u8868\u793A\u3002\u53EF\u591A\u6B21\u6DFB\u52A0\uFF1B\u5217\u8868\u540E\u9762\u7684\u56FE\u7247\u53E0\u5728\u4E0A\u65B9\uFF0C\u5B8C\u6574\u663E\u793A\u4FDD\u6301\u539F\u56FE\u6BD4\u4F8B\u3002"
+      });
+      const images = coverImages(template);
+      if (!images.length)
+        el.createEl("p", { text: "\u70B9\u51FB\u201C\u6DFB\u52A0\u5C01\u9762\u56FE\u7247\u201D\u7C98\u8D34\u6216\u591A\u9009\u672C\u5730\u56FE\u7247\u3002" });
+      images.forEach((image, index) => {
+        const card = el.createDiv({ cls: "better-export-cover-image-card" });
+        card.createEl("strong", {
+          text: "\u56FE\u7247 " + (index + 1) + " \xB7 " + image.path.split("/").at(-1)
+        });
+        const edit = (change) => this.updateCover((t) => {
+          const items = coverImages(t);
+          const item = items.find((v) => v.id === image.id);
+          if (item) {
+            change(item);
+            t.images = items.map(normalizeCoverImage);
+            t.imagePath = "";
+          }
+        }, true);
+        this.imageControl(card, "\u56FE\u7247", image.path, (path) => {
+          if (path) edit((v) => v.path = path);
+          else
+            this.updateCover((t) => {
+              t.images = coverImages(t).filter((v) => v.id !== image.id);
+              t.imagePath = "";
+            }, true);
+        });
+        for (const [key, label, max] of [
+          ["width", "\u5BBD\u5EA6 %", 100],
+          ["height", "\u9AD8\u5EA6 %", 100],
+          ["x", "\u5DE6\u4FA7\u4F4D\u7F6E %", 100 - image.width],
+          ["y", "\u9876\u90E8\u4F4D\u7F6E %", 100 - image.height]
+        ])
+          miniNumber(
+            card,
+            label,
+            image[key],
+            key === "width" || key === "height" ? 1 : 0,
+            max,
+            (value) => edit((v) => {
+              v[key] = value;
+            }),
+            1,
+            true
+          );
         settingSelect(
-          el,
+          card,
           "\u56FE\u7247\u9002\u914D",
           { contain: "\u5B8C\u6574\u663E\u793A", cover: "\u94FA\u6EE1\u88C1\u5207" },
-          template.imageFit ?? "contain",
-          (v) => this.updateCover((t) => {
-            t.imageFit = v;
+          image.fit,
+          (v) => edit((item) => {
+            item.fit = v;
           })
         );
-      }
+        const actions2 = card.createDiv({ cls: "better-export-header-actions" });
+        button(
+          actions2,
+          "\u6C34\u5E73\u5C45\u4E2D",
+          () => edit((v) => {
+            v.x = (100 - v.width) / 2;
+          })
+        );
+        button(
+          actions2,
+          "\u94FA\u6EE1\u6574\u9875",
+          () => edit((v) => {
+            v.x = 0;
+            v.y = 0;
+            v.width = 100;
+            v.height = 100;
+          })
+        );
+        button(
+          actions2,
+          "\u4E0B\u79FB\u4E00\u5C42",
+          () => this.updateCover((t) => {
+            const items = coverImages(t);
+            [items[index - 1], items[index]] = [
+              items[index],
+              items[index - 1]
+            ];
+            t.images = items;
+          }, true)
+        ).disabled = index === 0;
+        button(
+          actions2,
+          "\u4E0A\u79FB\u4E00\u5C42",
+          () => this.updateCover((t) => {
+            const items = coverImages(t);
+            [items[index], items[index + 1]] = [
+              items[index + 1],
+              items[index]
+            ];
+            t.images = items;
+          }, true)
+        ).disabled = index === images.length - 1;
+      });
     });
     if (template.mode !== "image")
       group(
@@ -22436,7 +22870,8 @@ var ExportPanel = class extends import_obsidian.Component {
         (el) => this.gridEditor(
           el,
           template.rows,
-          (change, rebuild) => this.updateCover((t) => change(t.rows), rebuild)
+          (change, rebuild) => this.updateCover((t) => change(t.rows), rebuild),
+          true
         )
       );
     const fields = headerFields(template);
@@ -22483,7 +22918,8 @@ var ExportPanel = class extends import_obsidian.Component {
         ...template,
         id: crypto.randomUUID(),
         name: template.name + " \xB7 \u672C\u7BC7",
-        rows: cloneRows(template.rows)
+        rows: cloneRows(template.rows),
+        images: coverImages(template)
       };
       this.plugin.settings.coverTemplates.push(template);
       this.plugin.settings.documentCoverIds[this.file.path] = template.id;
@@ -22497,7 +22933,16 @@ var ExportPanel = class extends import_obsidian.Component {
     });
     this.schedule();
   }
-  gridEditor(parent, rows, update) {
+  gridEditor(parent, rows, update, cover = false) {
+    if (cover) {
+      const height = this.paperHeightMm();
+      const guide = parent.createDiv({ cls: "better-export-spacing-guide" });
+      guide.createSpan({ text: "\u5C01\u9762\u7EB5\u5411\u6807\u5C3A" });
+      guide.createDiv({ cls: "better-export-spacing-scale" });
+      guide.createEl("small", {
+        text: `0 \u2014 25% \u2014 50% \u2014 75% \u2014 100%\uFF08${Math.round(height)} mm\uFF09`
+      });
+    }
     rows.forEach((row, ri) => {
       const rowEl = parent.createDiv({
         cls: "better-export-header-editor-row"
@@ -22521,25 +22966,26 @@ var ExportPanel = class extends import_obsidian.Component {
       );
       remove.disabled = rows.length === 1;
       const spacing = rowEl.createDiv({ cls: "better-export-row-spacing" });
-      miniNumber(
+      const gapMax = cover ? Math.max(this.paperHeightMm(), row.gapBefore, row.gapAfter) : Math.max(120, row.gapBefore, row.gapAfter);
+      spacingControl(
         spacing,
         "\u884C\u524D",
         row.gapBefore,
-        0,
-        80,
+        gapMax,
         (value) => update((all) => {
           if (all[ri]) all[ri].gapBefore = value;
-        })
+        }),
+        cover ? this.paperHeightMm() : void 0
       );
-      miniNumber(
+      spacingControl(
         spacing,
         "\u884C\u540E",
         row.gapAfter,
-        0,
-        80,
+        gapMax,
         (value) => update((all) => {
           if (all[ri]) all[ri].gapAfter = value;
-        })
+        }),
+        cover ? this.paperHeightMm() : void 0
       );
       const cells = rowEl.createDiv({ cls: "better-export-header-cells" });
       row.cells.forEach((cell, ci) => {
@@ -22636,6 +23082,10 @@ var ExportPanel = class extends import_obsidian.Component {
       true
     );
   }
+  paperHeightMm() {
+    const portrait = this.profile.pageSize === "A4" ? [210, 297] : [215.9, 279.4];
+    return this.profile.orientation === "portrait" ? portrait[1] : portrait[0];
+  }
   imageControl(parent, label, path, onSaved) {
     const row = parent.createDiv({ cls: "better-export-image-control" }), meta = row.createDiv();
     meta.createSpan({ text: label });
@@ -22652,7 +23102,7 @@ var ExportPanel = class extends import_obsidian.Component {
     button(row, "\u7C98\u8D34\u56FE\u7247", () => this.imagePasteWindow(label, onSaved), true);
     if (path) button(row, "\u79FB\u9664", () => onSaved(""));
   }
-  imagePasteWindow(label, onSaved) {
+  imagePasteWindow(label, onSaved, onMany) {
     this.el.querySelector(".better-export-image-paste")?.remove();
     const box = this.el.createDiv({
       cls: "better-export-image-paste better-export-image-paste-overlay"
@@ -22666,37 +23116,63 @@ var ExportPanel = class extends import_obsidian.Component {
       text: "\u70B9\u51FB\u8FD9\u91CC\uFF0C\u7136\u540E\u7C98\u8D34\u56FE\u7247"
     });
     zone.tabIndex = 0;
-    const accept = async (blob) => {
+    let busy = false;
+    const accept = async (blobs) => {
+      if (busy) return;
+      if (!blobs.length) {
+        new import_obsidian.Notice("\u6CA1\u6709\u53EF\u5BFC\u5165\u7684\u56FE\u7247");
+        return;
+      }
+      busy = true;
+      zone.setText("\u6B63\u5728\u4FDD\u5B58\u56FE\u7247\u2026");
       try {
-        const path = await this.savePastedImage(blob, label);
-        await onSaved(path);
+        const paths = [];
+        for (const blob of onMany ? blobs : blobs.slice(0, 1))
+          paths.push(await this.savePastedImage(blob, label));
+        if (onMany) await onMany(paths);
+        else await onSaved(paths[0]);
         box.remove();
-        new import_obsidian.Notice(`\u56FE\u7247\u5DF2\u4FDD\u5B58\uFF1A${path}`);
+        new import_obsidian.Notice("\u5DF2\u6DFB\u52A0 " + paths.length + " \u5F20\u56FE\u7247");
       } catch (error) {
         console.error(error);
-        new import_obsidian.Notice("\u56FE\u7247\u4FDD\u5B58\u5931\u8D25");
+        new import_obsidian.Notice("\u56FE\u7247\u4FDD\u5B58\u5931\u8D25\uFF0C\u8BF7\u91CD\u8BD5");
+        zone.setText("\u4FDD\u5B58\u5931\u8D25\uFF0C\u53EF\u91CD\u65B0\u7C98\u8D34\u6216\u9009\u62E9\u56FE\u7247");
+      } finally {
+        busy = false;
       }
     };
     zone.onpaste = (event) => {
       event.preventDefault();
-      const file = Array.from(event.clipboardData?.files ?? []).find(
-        (item) => item.type.startsWith("image/")
+      void accept(
+        Array.from(event.clipboardData?.files ?? []).filter(
+          (f) => f.type.startsWith("image/")
+        )
       );
-      if (file) void accept(file);
-      else new import_obsidian.Notice("\u526A\u8D34\u677F\u4E2D\u6CA1\u6709\u56FE\u7247");
     };
     const actions = box.createDiv({ cls: "better-export-zotero-actions" });
+    const picker = box.createEl("input", {
+      attr: { type: "file", accept: "image/*" }
+    });
+    picker.hidden = true;
+    picker.multiple = !!onMany;
+    picker.onchange = () => void accept(
+      Array.from(picker.files ?? []).filter(
+        (f) => f.type.startsWith("image/")
+      )
+    );
+    button(
+      actions,
+      onMany ? "\u9009\u62E9\u56FE\u7247\uFF08\u53EF\u591A\u9009\uFF09" : "\u9009\u62E9\u56FE\u7247",
+      () => picker.click()
+    );
     button(actions, "\u8BFB\u53D6\u526A\u8D34\u677F", async () => {
       try {
-        const items = await navigator.clipboard.read();
-        for (const item of items) {
-          const type = item.types.find((value) => value.startsWith("image/"));
-          if (type) {
-            await accept(await item.getType(type));
-            return;
-          }
+        const blobs = [];
+        for (const item of await navigator.clipboard.read()) {
+          const type = item.types.find((t) => t.startsWith("image/"));
+          if (type) blobs.push(await item.getType(type));
         }
-        new import_obsidian.Notice("\u526A\u8D34\u677F\u4E2D\u6CA1\u6709\u56FE\u7247");
+        await accept(blobs);
       } catch {
         new import_obsidian.Notice("\u65E0\u6CD5\u76F4\u63A5\u8BFB\u53D6\uFF0C\u8BF7\u5728\u7C98\u8D34\u533A\u6309 Ctrl/Cmd+V");
       }
@@ -23155,9 +23631,10 @@ var ExportPanel = class extends import_obsidian.Component {
     }, 180);
   }
   updatePrintButton() {
-    if (this.printButton) {
-      this.printButton.disabled = this.dirty || this.isRendering || !this.ready || Boolean(this.printCleanup);
-      this.printButton.title = this.printButton.disabled ? "\u7B49\u5F85\u6709\u6548\u9884\u89C8\uFF1B\u8BF7\u5148\u5904\u7406\u63D0\u793A\u7684\u95EE\u9898" : "\u5BFC\u51FA\u5F53\u524D\u9884\u89C8";
+    for (const outputButton of [this.printButton, this.systemPrintButton]) {
+      if (!outputButton) continue;
+      outputButton.disabled = this.dirty || this.isRendering || !this.ready || Boolean(this.printCleanup);
+      outputButton.title = outputButton.disabled ? "\u7B49\u5F85\u6709\u6548\u9884\u89C8\uFF1B\u8BF7\u5148\u5904\u7406\u63D0\u793A\u7684\u95EE\u9898" : outputButton === this.printButton ? "\u76F4\u63A5\u4FDD\u5B58\u5F53\u524D\u9884\u89C8\u4E3A PDF" : "\u6253\u5F00\u7CFB\u7EDF\u6253\u5370\u7A97\u53E3";
     }
   }
   async render() {
@@ -23329,12 +23806,22 @@ var ExportPanel = class extends import_obsidian.Component {
       cls: "better-export-page better-export-cover-page"
     });
     page.style.animationDelay = "0ms";
+    for (const image of coverImages(template)) {
+      this.renderTemplateImage(page, image.path, "\u5C01\u9762\u56FE\u7247");
+      const img = page.lastElementChild;
+      img.classList.add("better-export-cover-layer");
+      Object.assign(img.style, {
+        position: "absolute",
+        left: image.x + "%",
+        top: image.y + "%",
+        width: image.width + "%",
+        height: image.height + "%",
+        objectFit: image.fit,
+        maxWidth: "none"
+      });
+    }
     if (template.mode === "image") {
-      if (!template.imagePath)
-        throw new LayoutError("\u8BF7\u7C98\u8D34\u6216\u9009\u62E9\u6574\u9875\u5C01\u9762\u56FE\u7247");
       page.addClass("better-export-image-cover");
-      this.renderTemplateImage(page, template.imagePath, "\u5C01\u9762");
-      page.querySelector("img").style.objectFit = template.imageFit ?? "contain";
       if (template.showPageNumber)
         page.createDiv({ cls: "better-export-print-footer", text: "1" });
       return;
@@ -23418,16 +23905,69 @@ var ExportPanel = class extends import_obsidian.Component {
     page.notes.toggleClass("is-visible", page.notes.childElementCount > 0);
   }
   async print() {
+    if (!await this.outputReady()) return;
+    const electron = window.electron, remote = electron?.remote, contents = remote?.getCurrentWebContents?.() ?? remote?.getCurrentWindow?.().webContents, fs = remote?.require?.("fs");
+    if (!remote?.dialog?.showSaveDialog || !contents?.printToPDF || !fs?.promises) {
+      new import_obsidian.Notice("\u5F53\u524D Obsidian \u73AF\u5883\u4E0D\u652F\u6301\u76F4\u63A5\u751F\u6210 PDF\uFF0C\u8BF7\u4F7F\u7528\u201C\u7CFB\u7EDF\u6253\u5370\u201D");
+      return;
+    }
+    const chosen = await remote.dialog.showSaveDialog({
+      title: "\u5BFC\u51FA PDF",
+      defaultPath: this.defaultPdfPath(),
+      filters: [{ name: "PDF \u6587\u4EF6", extensions: ["pdf"] }],
+      properties: ["showOverwriteConfirmation", "createDirectory"]
+    });
+    if (chosen.canceled || !chosen.filePath) return;
+    const clean2 = this.enterPrintMode(""), savedPath = chosen.filePath;
+    let succeeded = false;
+    try {
+      await document.fonts?.ready;
+      await new Promise(
+        (resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+      );
+      const pdf = await contents.printToPDF({
+        printBackground: true,
+        preferCSSPageSize: true,
+        generateTaggedPDF: true,
+        generateDocumentOutline: true
+      });
+      await fs.promises.writeFile(
+        savedPath,
+        pdf instanceof ArrayBuffer ? new Uint8Array(pdf) : pdf
+      );
+      succeeded = true;
+      new import_obsidian.Notice(`PDF \u5DF2\u4FDD\u5B58\uFF1A${savedPath}`);
+    } catch (error) {
+      console.error("Better Export PDF export failed", error);
+      new import_obsidian.Notice("PDF \u5BFC\u51FA\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5\u4FDD\u5B58\u4F4D\u7F6E\u540E\u91CD\u8BD5");
+    } finally {
+      clean2();
+      if (!this.closed)
+        this.status(succeeded ? "PDF \u5DF2\u4FDD\u5B58" : "PDF \u5BFC\u51FA\u5931\u8D25", succeeded ? "is-ready" : "is-error");
+    }
+  }
+  async systemPrint() {
+    if (!await this.outputReady()) return;
+    const clean2 = this.enterPrintMode("\u5DF2\u8FD4\u56DE\u9884\u89C8\uFF1B\u6253\u5370\u7ED3\u679C\u4EE5\u7CFB\u7EDF\u7A97\u53E3\u4E3A\u51C6");
+    addEventListener("afterprint", clean2, { once: true });
+    try {
+      window.print();
+    } catch {
+      clean2();
+      new import_obsidian.Notice("\u65E0\u6CD5\u6253\u5F00\u6253\u5370\u7A97\u53E3\uFF0C\u8BF7\u91CD\u8BD5");
+    }
+  }
+  async outputReady() {
     const latest = this.documentView()?.editor.getValue() ?? await this.plugin.app.vault.read(this.file);
-    if (this.closed) return;
+    if (this.closed) return false;
     if (latest !== this.markdown) {
       this.schedule();
       new import_obsidian.Notice("\u6B63\u6587\u5DF2\u53D8\u5316\uFF0C\u8BF7\u7B49\u5F85\u9884\u89C8\u540C\u6B65\u540E\u5BFC\u51FA");
-      return;
+      return false;
     }
     if (this.dirty || this.isRendering || !this.ready || this.printCleanup) {
       new import_obsidian.Notice("\u8BF7\u7B49\u5F85\u6709\u6548\u9884\u89C8\u540E\u5BFC\u51FA");
-      return;
+      return false;
     }
     const errors = citationProblems(
       latest,
@@ -23435,8 +23975,11 @@ var ExportPanel = class extends import_obsidian.Component {
     );
     if (errors.length) {
       this.schedule();
-      return;
+      return false;
     }
+    return true;
+  }
+  enterPrintMode(message) {
     const title = document.title;
     document.title = this.file.basename;
     document.body.addClass("better-export-printing");
@@ -23446,20 +23989,17 @@ var ExportPanel = class extends import_obsidian.Component {
       document.body.removeClass("better-export-printing");
       this.el.removeClass("is-print-target");
       removeEventListener("afterprint", clean2);
-      this.printCleanup = null;
+      if (this.printCleanup === clean2) this.printCleanup = null;
       this.updatePrintButton();
-      if (!this.closed)
-        this.status("\u5DF2\u8FD4\u56DE\u9884\u89C8\uFF1B\u4FDD\u5B58\u7ED3\u679C\u4EE5\u6253\u5370\u7A97\u53E3\u4E3A\u51C6", "is-ready");
+      if (!this.closed && message) this.status(message, "is-ready");
     };
     this.printCleanup = clean2;
     this.updatePrintButton();
-    addEventListener("afterprint", clean2, { once: true });
-    try {
-      window.print();
-    } catch {
-      clean2();
-      new import_obsidian.Notice("\u65E0\u6CD5\u6253\u5F00\u6253\u5370\u7A97\u53E3\uFF0C\u8BF7\u91CD\u8BD5");
-    }
+    return clean2;
+  }
+  defaultPdfPath() {
+    const safeName = this.file.basename.replace(/[<>:"/\\|?*]/g, "_") + ".pdf", adapter = this.plugin.app.vault.adapter, base = adapter?.getBasePath?.().replace(/\\/g, "/").replace(/\/$/, "") ?? "", folder = this.file.parent?.path.replace(/^\/+|\/+$/g, "") ?? "";
+    return base ? `${base}/${folder ? folder + "/" : ""}${safeName}` : safeName;
   }
   status(text2, state) {
     if (!this.statusEl || this.closed) return;
@@ -23498,6 +24038,13 @@ var SettingsTab = class extends import_obsidian.PluginSettingTab {
       (t) => t.setValue(this.p.settings.attachmentFolderName).onChange(async (v) => {
         this.p.settings.attachmentFolderName = v.trim();
         this.p.applyFolderVisibility();
+        await this.p.save();
+      })
+    );
+    new import_obsidian.Setting(this.containerEl).setName("\u6B63\u6587\u56FE\u7247\u5706\u89D2").setDesc("\u5E94\u7528\u4E8E\u7F16\u8F91\u5668\u3001\u9605\u8BFB\u89C6\u56FE\u548C PDF \u5BFC\u51FA\uFF1B\u8BBE\u4E3A 0 \u53EF\u5173\u95ED\u5706\u89D2").addSlider(
+      (slider) => slider.setLimits(0, 32, 1).setDynamicTooltip().setValue(this.p.settings.mediaBorderRadius).onChange(async (value) => {
+        this.p.settings.mediaBorderRadius = value;
+        this.p.applyMediaAppearance();
         await this.p.save();
       })
     );
@@ -23548,7 +24095,7 @@ function toggleSetting(p, n, v, c) {
 function textSetting(p, n, v, c) {
   new import_obsidian.Setting(p).setName(n).addText((x) => x.setValue(v).onChange(c));
 }
-function miniNumber(parent, label, value, min, max, onChange, step = 1) {
+function miniNumber(parent, label, value, min, max, onChange, step = 1, commitOnChange = false) {
   const wrap = parent.createEl("label", { cls: "better-export-mini-number" });
   wrap.createSpan({ text: label });
   const input = wrap.createEl("input");
@@ -23557,11 +24104,43 @@ function miniNumber(parent, label, value, min, max, onChange, step = 1) {
   input.max = String(max);
   input.step = String(step);
   input.value = String(value);
-  wheelNumber(input);
-  input.oninput = () => {
+  wheelNumber(input, commitOnChange ? "change" : "input");
+  input[commitOnChange ? "onchange" : "oninput"] = () => {
     const next = Number(input.value);
     if (Number.isFinite(next)) onChange(Math.max(min, Math.min(max, next)));
   };
+}
+function spacingControl(parent, label, value, max, onChange, pageHeight) {
+  const wrap = parent.createDiv({ cls: "better-export-spacing-control" }), heading = wrap.createDiv(), title = heading.createSpan({ text: label }), readout = heading.createEl("small"), controls = wrap.createDiv(), slider = controls.createEl("input"), number2 = controls.createEl("input");
+  const display = (next) => {
+    title.setText(label);
+    readout.setText(
+      pageHeight ? `${next.toFixed(next % 1 ? 1 : 0)} mm \xB7 ${Math.round(next / pageHeight * 100)}% \u9875\u9AD8` : `${next.toFixed(next % 1 ? 1 : 0)} mm`
+    );
+  };
+  slider.type = "range";
+  slider.min = "0";
+  slider.max = String(max);
+  slider.step = "1";
+  slider.value = String(value);
+  number2.type = "number";
+  number2.min = "0";
+  number2.max = String(max);
+  number2.step = "1";
+  number2.value = String(value);
+  display(value);
+  slider.oninput = () => {
+    number2.value = slider.value;
+    display(Number(slider.value));
+  };
+  slider.onchange = () => onChange(Number(slider.value));
+  number2.oninput = () => {
+    const next = Math.max(0, Math.min(max, Number(number2.value) || 0));
+    slider.value = String(next);
+    display(next);
+  };
+  number2.onchange = () => onChange(Math.max(0, Math.min(max, Number(number2.value) || 0)));
+  wheelNumber(number2, "change");
 }
 function cloneRows(rows) {
   return rows.map((row) => ({
@@ -23593,6 +24172,7 @@ function select(p, o, v, c) {
   s.value = v;
   s.onchange = () => c(s.value);
   wheelSelect(s);
+  return s;
 }
 function toggle(p, n, c) {
   const b = button(p, n, () => {
@@ -23605,14 +24185,14 @@ function place(e, x, y) {
   e.style.left = `${Math.max(6, Math.min(x, innerWidth - r.width - 6))}px`;
   e.style.top = `${Math.max(6, Math.min(y, innerHeight - r.height - 6))}px`;
 }
-function wheelNumber(input) {
+function wheelNumber(input, eventName = "input") {
   let timer = 0;
   input.addEventListener(
     "wheel",
     (event) => {
       event.preventDefault();
       event.deltaY < 0 ? input.stepUp() : input.stepDown();
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event(eventName, { bubbles: true }));
       input.addClass("is-wheel-adjusting");
       clearTimeout(timer);
       timer = window.setTimeout(

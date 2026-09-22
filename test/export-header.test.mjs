@@ -4,6 +4,7 @@ import {
   fillHeaderText,
   headerFields,
   normalizeHeader,
+  normalizeCover,
   setRowColumnCount,
   starterCover,
 } from "../test-dist/export-header.mjs";
@@ -77,4 +78,13 @@ test("reducing and restoring columns preserves hidden content", () => {
   assert.equal(reduced.cells.length, 1);
   const restored = setRowColumnCount(reduced, 2);
   assert.deepEqual(restored.cells, original.cells);
+});
+
+test("cover spacing above 100 mm survives template normalization", () => {
+  const cover = starterCover();
+  cover.rows[0].gapBefore = 215;
+  cover.rows[0].gapAfter = 135;
+  const normalized = normalizeCover(cover);
+  assert.equal(normalized.rows[0].gapBefore, 215);
+  assert.equal(normalized.rows[0].gapAfter, 135);
 });

@@ -5,6 +5,10 @@ import {
   mediaEmbeds,
   readMediaLayout,
   clearMediaLayout,
+  adjacentMediaBlock,
+  readMediaAdjustment,
+  setMediaAdjustment,
+  alignMediaGroup,
 } from "../test-dist/media-layout.mjs";
 
 test("finds wiki images, videos, and standard Markdown images", () => {
@@ -24,6 +28,15 @@ test("turns two embeds into a portable two-column source line", () => {
   assert.doesNotMatch(result?.markdown ?? "", /\n/);
   assert.match(result?.markdown ?? "", /better-export-cols-2/);
   assert.match(result?.markdown ?? "", /better-export-crop/);
+  assert.doesNotMatch(result?.markdown ?? "", /better-export-align-/);
+  assert.doesNotMatch(result?.markdown ?? "", /better-export-width-/);
+  assert.deepEqual(readMediaLayout(result?.markdown ?? ""), {
+    align: "center",
+    width: "100",
+    columns: 2,
+    gap: "m",
+    crop: true,
+  });
 });
 
 test("preserves human labels while replacing old layout tokens", () => {
@@ -65,4 +78,45 @@ test("editing media reads its existing options and clearing preserves normal lin
     source + " [[a.png]]",
   );
   assert.equal(mediaEmbeds("![[note.md]] ![[report.pdf]]").length, 0);
+});
+
+test("finds adjacent media paragraphs across blank lines without crossing prose", () => {
+  const lines = [
+    "正文",
+    "",
+    "![[a.png|better-export-row better-export-cols-2]]",
+    "",
+    "",
+    "![[b.png|better-export-row better-export-cols-2]]",
+    "",
+    "下一段",
+    "![[c.png]]",
+  ];
+  const block = adjacentMediaBlock(lines, 2);
+  assert.deepEqual(block, {
+    from: 2,
+    to: 5,
+    source:
+      "![[a.png|better-export-row better-export-cols-2]]\n![[b.png|better-export-row better-export-cols-2]]",
+    count: 2,
+  });
+});
+
+test("stores per-image resize adjustments and one-click alignment resets the group", () => {
+  const first = setMediaAdjustment(
+    "![[a.png|图一 better-export-media better-export-row better-export-cols-2]]",
+    { weight: 1350, height: 286, equal: false },
+  );
+  assert.deepEqual(readMediaAdjustment(first), {
+    weight: 1350,
+    height: 286,
+    equal: false,
+  });
+  assert.match(first, /图一/);
+  const aligned = alignMediaGroup(
+    `${first} ![[b.png|better-export-media better-export-row better-export-cols-2]]`,
+  );
+  assert.equal(aligned?.count, 2);
+  assert.equal((aligned?.markdown.match(/better-export-equal/g) ?? []).length, 2);
+  assert.doesNotMatch(aligned?.markdown ?? "", /better-export-(?:weight|height)-/);
 });

@@ -25,6 +25,140 @@ test("native images and Obsidian image wrappers apply width exactly once", async
   expect(widths).toHaveLength(2);
   expect(Math.abs(widths[0] - widths[1])).toBeLessThan(1);
 });
+test("legacy right-aligned 25% media tokens still form one two-column row", async ({
+  page,
+}) => {
+  const token =
+    "better-export-media better-export-align-right better-export-width-25 better-export-row better-export-cols-2 better-export-gap-m";
+  await page.evaluate(
+    ({ token }) =>
+      window.setup(
+        `![[attachments/first.png|${token}]]\n\n\n![[attachments/second.png|${token}]]`,
+      ),
+    { token },
+  );
+  await ready(page);
+  const embeds = page.locator(
+    ".better-export-preview-frame > .better-export-pages .better-export-page-content p > .internal-embed",
+  );
+  await expect(embeds).toHaveCount(2);
+  const boxes = await embeds.evaluateAll((items) =>
+    items.map((item) => {
+      const box = item.getBoundingClientRect();
+      return { x: box.x, y: box.y, width: box.width };
+    }),
+  );
+  expect(Math.abs(boxes[0].y - boxes[1].y)).toBeLessThan(1);
+  expect(boxes[1].x).toBeGreaterThan(boxes[0].x + boxes[0].width);
+  expect(Math.abs(boxes[0].width - boxes[1].width)).toBeLessThan(1);
+});
+test("applying two columns to one image merges the adjacent image paragraph", async ({
+  page,
+}) => {
+  await page.evaluate(() =>
+    window.setup("![[attachments/first.png]]\n\n\n![[attachments/second.png]]"),
+  );
+  await ready(page);
+  await page.evaluate(() =>
+    window.plugin.mediaPopover(window.view.editor, 100, 100),
+  );
+  await page
+    .locator(".better-export-context-toolbar select")
+    .first()
+    .selectOption("2");
+  await page
+    .locator(".better-export-context-toolbar")
+    .getByRole("button", { name: "应用", exact: true })
+    .click();
+  const source = await page.evaluate(() => window.view.editor.getValue());
+  expect(source).toContain("attachments/first.png");
+  expect(source).toContain("attachments/second.png");
+  expect(source).toContain("better-export-cols-2");
+  expect(source).not.toContain("\n");
+  expect(source).not.toContain("better-export-align-");
+  expect(source).not.toContain("better-export-width-");
+});
+test("one-click alignment resets image adjustments and adds resize handles", async ({
+  page,
+}) => {
+  const row =
+    "![[attachments/first.png|better-export-media better-export-row better-export-cols-2 better-export-gap-m better-export-weight-1400 better-export-height-260]] ![[attachments/second.png|better-export-media better-export-row better-export-cols-2 better-export-gap-m]]";
+  await page.evaluate((source) => window.setup(source), row);
+  await ready(page);
+  await page.evaluate(() =>
+    window.plugin.mediaPopover(window.view.editor, 100, 100),
+  );
+  await page
+    .locator(".better-export-context-toolbar")
+    .getByRole("button", { name: "一键对齐", exact: true })
+    .click();
+  const source = await page.evaluate(() => window.view.editor.getValue());
+  expect((source.match(/better-export-equal/g) ?? []).length).toBe(2);
+  expect(source).not.toMatch(/better-export-(?:weight|height)-/);
+  await page.evaluate((updated) => window.setSource(updated), source);
+  await ready(page);
+  const aligned = page.locator(
+    ".better-export-preview-frame > .better-export-pages .internal-embed.is-better-export-equal",
+  );
+  await expect(aligned).toHaveCount(2);
+  await expect(
+    page.locator(
+      ".better-export-preview-frame > .better-export-pages .better-export-media-resize-handle",
+    ),
+  ).toHaveCount(2);
+  const heights = await aligned.evaluateAll((items) =>
+    items.map((item) => item.getBoundingClientRect().height),
+  );
+  expect(Math.abs(heights[0] - heights[1])).toBeLessThan(1);
+  await expect(aligned.first()).toHaveCSS("border-top-left-radius", "10px");
+  await expect(aligned.first()).toHaveCSS("overflow", "hidden");
+  await page.evaluate(() => {
+    const handle = document.querySelector(
+      ".better-export-preview-frame > .better-export-pages .better-export-media-resize-handle",
+    );
+    const box = handle.getBoundingClientRect();
+    const point = { clientX: box.right - 2, clientY: box.bottom - 2 };
+    handle.dispatchEvent(
+      new PointerEvent("pointerdown", { ...point, button: 0, bubbles: true }),
+    );
+    document.dispatchEvent(
+      new PointerEvent("pointermove", {
+        clientX: point.clientX + 35,
+        clientY: point.clientY + 24,
+        bubbles: true,
+      }),
+    );
+    document.dispatchEvent(new PointerEvent("pointerup", { bubbles: true }));
+  });
+  const resized = await page.evaluate(() => window.view.editor.getValue());
+  expect(resized).toMatch(/better-export-weight-\d+/);
+  expect(resized).not.toMatch(/better-export-height-\d+/);
+  const appearance = await page
+    .locator(
+      ".better-export-preview-frame > .better-export-pages .internal-embed",
+    )
+    .first()
+    .evaluate((item) => {
+      const image = item.querySelector("img");
+      const box = image.getBoundingClientRect();
+      return {
+        ratio: box.width / box.height,
+        radius: getComputedStyle(image).borderTopLeftRadius,
+        fixedHeight: item.style.getPropertyValue("--be-media-height"),
+      };
+    });
+  expect(appearance.ratio).toBeCloseTo(1.5, 1);
+  expect(appearance.radius).toBe("10px");
+  expect(appearance.fixedHeight).toBe("");
+  await page.evaluate(() => {
+    window.plugin.settings.mediaBorderRadius = 18;
+    window.plugin.applyMediaAppearance();
+  });
+  await expect(aligned.first().locator("img")).toHaveCSS(
+    "border-top-left-radius",
+    "18px",
+  );
+});
 test.beforeEach(async ({ page }) => {
   await page.route("http://localhost/**", (route) =>
     route.fulfill({
@@ -172,7 +306,7 @@ test("pasting an image creates an independent full page cover", async ({
     const file = new window.view.file.constructor("cover.png");
     file.extension = "png";
     window.app.fileManager = {
-      getAvailablePathForAttachment: async () => file.path,
+      getAvailablePathForAttachment: async (name) => name,
     };
     window.app.vault.createBinary = async (path, bytes) => {
       window.savedImage = { path, size: bytes.byteLength };
@@ -185,9 +319,7 @@ test("pasting an image creates an independent full page cover", async ({
       );
   });
   await page.getByRole("button", { name: "封面·版头", exact: true }).click();
-  await page
-    .getByRole("button", { name: "粘贴图片作为封面", exact: true })
-    .click();
+  await page.getByRole("button", { name: "添加封面图片", exact: true }).click();
   await page.locator(".better-export-image-paste-zone").evaluate((zone) => {
     const dt = new DataTransfer();
     dt.items.add(new File(["image"], "cover.png", { type: "image/png" }));
@@ -214,6 +346,73 @@ test("pasting an image creates an independent full page cover", async ({
       ".better-export-preview-frame > .better-export-pages .better-export-page",
     ),
   ).toHaveCount(2);
+  await page.getByRole("button", { name: "添加封面图片", exact: true }).click();
+  await page
+    .locator(".better-export-image-paste input[type=file]")
+    .setInputFiles([
+      { name: "a.png", mimeType: "image/png", buffer: Buffer.from("a") },
+      { name: "b.png", mimeType: "image/png", buffer: Buffer.from("b") },
+    ]);
+  await expect(page.locator(".better-export-image-paste-zone")).toHaveCount(0);
+  await ready(page);
+  await expect(img).toHaveCount(3);
+  expect(
+    await page.evaluate(() => window.panel.currentCover().images.length),
+  ).toBe(3);
+  let card = page.locator(".better-export-cover-image-card").first();
+  await card.getByLabel("宽度 %", { exact: true }).fill("40");
+  await card.getByLabel("宽度 %", { exact: true }).press("Tab");
+  await ready(page);
+  expect(await img.first().evaluate((el) => el.style.width)).toBe("40%");
+  await card.getByLabel("左侧位置 %", { exact: true }).fill("15");
+  await card.getByLabel("左侧位置 %", { exact: true }).press("Tab");
+  await ready(page);
+  expect(await img.first().evaluate((el) => el.style.left)).toBe("15%");
+  await card.getByRole("button", { name: "上移一层", exact: true }).click();
+  await ready(page);
+  expect(await img.nth(1).evaluate((el) => el.style.width)).toBe("40%");
+  await page
+    .locator(".better-export-cover-image-card")
+    .first()
+    .getByRole("button", { name: "移除", exact: true })
+    .click();
+  await ready(page);
+  await expect(img).toHaveCount(2);
+  expect(
+    await page.evaluate(
+      () => window.plugin.settings.coverTemplates[0].images.length,
+    ),
+  ).toBe(2);
+});
+
+test("cover row ruler supports positions beyond 100 mm and sidebar rebuild keeps scroll", async ({
+  page,
+}) => {
+  await page.evaluate(() => window.setup("正文"));
+  await ready(page);
+  await page.getByRole("button", { name: "封面·版头", exact: true }).click();
+  await page.getByRole("button", { name: "新建空白", exact: true }).click();
+  await expect(page.getByText("封面纵向标尺", { exact: true })).toBeVisible();
+  const before = page.locator(".better-export-spacing-control").first();
+  await expect(before.locator("input[type=range]")).toHaveAttribute(
+    "max",
+    "297",
+  );
+  await before.locator('input[type="number"]').fill("180");
+  await before.locator('input[type="number"]').press("Tab");
+  await ready(page);
+  expect(
+    await page.evaluate(() => window.panel.currentCover().rows[0].gapBefore),
+  ).toBe(180);
+  await expect(before).toContainText("61% 页高");
+  for (let i = 0; i < 4; i++)
+    await page.getByRole("button", { name: "+ 添加一行", exact: true }).click();
+  const control = page.locator(".better-export-controls");
+  await control.evaluate((el) => (el.scrollTop = 360));
+  const position = await control.evaluate((el) => el.scrollTop);
+  expect(position).toBeGreaterThan(100);
+  await page.evaluate(() => window.panel.sidebar());
+  expect(await control.evaluate((el) => el.scrollTop)).toBe(position);
 });
 test("long paragraphs preserve every character and PDF uses the same pages", async ({
   page,
@@ -552,14 +751,66 @@ test("citation problem buttons remain clickable and select the exact source toke
     to: { line: 0, ch: 12 },
   });
 });
-test("print keeps its layout until afterprint and restores UI after cancellation or completion", async ({
+test("PDF export saves directly without opening the system print window", async ({
+  page,
+}) => {
+  await page.evaluate(() => window.setup("<p>直接导出测试</p>"));
+  await ready(page);
+  await page.evaluate(() => {
+    window.printCalls = 0;
+    window.print = () => window.printCalls++;
+    window.pdfExport = {};
+    window.electron = {
+      remote: {
+        dialog: {
+          showSaveDialog: async (options) => {
+            window.pdfExport.dialog = options;
+            return { filePath: "C:/output/报告.pdf" };
+          },
+        },
+        getCurrentWebContents: () => ({
+          printToPDF: async (options) => {
+            window.pdfExport.print = options;
+            return new Uint8Array([37, 80, 68, 70]);
+          },
+        }),
+        require: () => ({
+          promises: {
+            writeFile: async (path, data) => {
+              window.pdfExport.write = { path, bytes: Array.from(data) };
+            },
+          },
+        }),
+      },
+    };
+    return window.panel.print();
+  });
+  const result = await page.evaluate(() => ({
+    export: window.pdfExport,
+    printCalls: window.printCalls,
+  }));
+  expect(result.printCalls).toBe(0);
+  expect(result.export.write).toEqual({
+    path: "C:/output/报告.pdf",
+    bytes: [37, 80, 68, 70],
+  });
+  expect(result.export.print).toMatchObject({
+    printBackground: true,
+    preferCSSPageSize: true,
+  });
+  await expect(page.locator(".better-export-floating-panel")).not.toHaveClass(
+    /is-print-target/,
+  );
+});
+
+test("system print keeps its layout until afterprint and restores UI", async ({
   page,
 }) => {
   await page.evaluate(() => window.setup("<p>打印状态测试</p>"));
   await ready(page);
   await page.evaluate(() => {
     window.print = () => {};
-    return window.panel.print();
+    return window.panel.systemPrint();
   });
   await expect(page.locator(".better-export-floating-panel")).toHaveClass(
     /is-print-target/,
@@ -575,4 +826,3 @@ test("print keeps its layout until afterprint and restores UI after cancellation
     page.getByRole("button", { name: "导出 PDF", exact: true }),
   ).toBeEnabled();
 });
-

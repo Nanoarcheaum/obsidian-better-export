@@ -14,6 +14,14 @@ Object.assign(window, { paginate, buildExportCss, DEFAULT_PROFILE, notices });
   document.body.append(view.containerEl);
   let source = markdown,
     selection = { line: 0, ch: 0 };
+  const offset = (position: { line: number; ch: number }) => {
+    const lines = source.split("\n");
+    return (
+      lines
+        .slice(0, position.line)
+        .reduce((sum, line) => sum + line.length + 1, 0) + position.ch
+    );
+  };
   view.editor = {
     getValue: () => source,
     getCursor: () => selection,
@@ -23,6 +31,12 @@ Object.assign(window, { paginate, buildExportCss, DEFAULT_PROFILE, notices });
       source += text;
     },
     setCursor: (p: any) => (selection = p),
+    getLine: (line: number) => source.split("\n")[line] ?? "",
+    lineCount: () => source.split("\n").length,
+    getRange: (from: any, to: any) => source.slice(offset(from), offset(to)),
+    replaceRange: (text: string, from: any, to: any) => {
+      source = source.slice(0, offset(from)) + text + source.slice(offset(to));
+    },
   };
   workspace.getActiveViewOfType = () => view;
   workspace.getLeavesOfType = () => [{ view }];

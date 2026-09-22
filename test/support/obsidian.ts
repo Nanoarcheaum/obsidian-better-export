@@ -1,5 +1,6 @@
 // Deliberately small host adapter. Browser tests execute the production panel and paginator.
 export const notices: string[] = [];
+const markdownPostProcessors: Array<(el: HTMLElement) => void> = [];
 export class Notice {
   constructor(text: string) {
     notices.push(text);
@@ -40,6 +41,14 @@ export class Plugin extends Component {
     this.commands.push(c);
   }
   addSettingTab() {}
+  registerMarkdownPostProcessor(processor: (el: HTMLElement) => void) {
+    markdownPostProcessors.push(processor);
+    this.register(() => {
+      const index = markdownPostProcessors.indexOf(processor);
+      if (index >= 0) markdownPostProcessors.splice(index, 1);
+    });
+    return processor;
+  }
 }
 export class PluginSettingTab {
   containerEl = document.createElement("div");
@@ -71,6 +80,11 @@ export const MarkdownRenderer = {
     (app.renderedMarkdown ??= []).push(markdown);
     markdown = markdown
       .replace(
+        /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g,
+        (_, target, label = "") =>
+          `<span class="internal-embed" alt="${label}" data-href="${target}"><img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%2386a99a'/%3E%3C/svg%3E" alt="${label}"></span>`,
+      )
+      .replace(
         /\$\$([\s\S]*?)\$\$|\$([^$\n]+)\$/g,
         (_, block, inline) =>
           `<span data-test-math="true">${block ?? inline}</span>`,
@@ -84,13 +98,16 @@ export const MarkdownRenderer = {
     el.innerHTML = markdown
       .split(/\n\n/)
       .map((part) =>
-        part.startsWith("<")
-          ? part
-          : /^## /.test(part)
-            ? `<h2>${part.slice(3)}</h2>`
-            : `<p>${part}</p>`,
+        part.includes('class="internal-embed"')
+          ? `<p>${part}</p>`
+          : part.startsWith("<")
+            ? part
+            : /^## /.test(part)
+              ? `<h2>${part.slice(3)}</h2>`
+              : `<p>${part}</p>`,
       )
       .join("");
+    for (const processor of markdownPostProcessors) processor(el);
   },
 };
 class Control {

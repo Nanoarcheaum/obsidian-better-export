@@ -1,4 +1,5 @@
 import { mapProse } from "./markdown-options";
+import { CoverImage, coverImages } from "./cover-images";
 export type HeaderRepeat = "first" | "all";
 export type HeaderBorder = "none" | "underline" | "grid";
 export type HeaderAlign = "left" | "center" | "right";
@@ -38,6 +39,7 @@ export interface ExportCoverTemplate {
   mode?: "grid" | "image";
   imagePath?: string;
   imageFit?: "contain" | "cover";
+  images?: CoverImage[];
 }
 
 export function starterHeader(): ExportHeaderTemplate {
@@ -373,6 +375,7 @@ export function normalizeCover(
     mode: template.mode === "image" ? "image" : "grid",
     imagePath: String(template.imagePath ?? ""),
     imageFit: template.imageFit === "cover" ? "cover" : "contain",
+    images: coverImages(template),
     showPageNumber: Boolean(template.showPageNumber),
     rows: normalizeRows(template.rows),
   };
@@ -431,5 +434,5 @@ function normalizeRows(rows: HeaderRow[]): HeaderRow[] {
 }
 
 function clampGap(value: number): number {
-  return Math.max(0, Math.min(80, Number(value) || 0));
+  return Math.max(0, Math.min(400, Number(value) || 0));
 }

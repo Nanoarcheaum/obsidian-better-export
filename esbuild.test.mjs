@@ -1,5 +1,5 @@
 import esbuild from "esbuild";
-for (const name of ["markdown-options", "template-library"])
+for (const name of ["markdown-options", "template-library", "cover-images"])
   await esbuild.build({
     loader: { ".csl": "text", ".xml": "text" },
     entryPoints: [`src/${name}.ts`],

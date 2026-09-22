@@ -1,3 +1,9 @@
+import {
+  coverImages,
+  addCoverImages,
+  normalizeCoverImage,
+  CoverImage,
+} from "./cover-images";
 import { prepareWikiLinks, applyWikiLinkMode } from "./markdown-options";
 import {
   CitationOptions,
@@ -38,6 +44,11 @@ import {
   mediaEmbeds,
   readMediaLayout,
   clearMediaLayout,
+  adjacentMediaBlock,
+  groupRenderedMediaRows,
+  readMediaAdjustment,
+  setMediaAdjustment,
+  alignMediaGroup,
 } from "./media-layout";
 import {
   DEFAULT_PROFILE,
@@ -86,6 +97,7 @@ interface Settings {
   documentCitationOptions: Record<string, CitationOptions>;
   hideAttachmentFolders: boolean;
   attachmentFolderName: string;
+  mediaBorderRadius: number;
   exportProfile: ExportProfile;
   citationStyle: CitationStyle;
   citationPlacement: CitationPlacement;
@@ -106,6 +118,7 @@ const DEFAULTS: Settings = {
   documentCitationOptions: {},
   hideAttachmentFolders: true,
   attachmentFolderName: "",
+  mediaBorderRadius: 10,
   exportProfile: DEFAULT_PROFILE,
   citationStyle: "apa7",
   citationPlacement: "bibliography",
@@ -123,11 +136,13 @@ const DEFAULTS: Settings = {
 export default class BetterExportPlugin extends Plugin {
   settings: Settings = DEFAULTS;
   private folderStyle: HTMLStyleElement | null = null;
+  private mediaStyle: HTMLStyleElement | null = null;
   private panel: ExportPanel | null = null;
   private popover: HTMLElement | null = null;
   private opening = 0;
   async onload(): Promise<void> {
     await this.loadSettings();
+    this.applyMediaAppearance();
     this.addRibbonIcon(
       "file-output",
       "Better Export",
@@ -156,6 +171,21 @@ export default class BetterExportPlugin extends Plugin {
           '\n\n<div class="better-export-page-break"></div>\n\n',
         ),
     });
+    this.registerMarkdownPostProcessor((element) => {
+      groupRenderedMediaRows(element);
+      this.enhanceMediaRows(element);
+    });
+    this.registerDomEvent(
+      document,
+      "pointerover",
+      (event) => {
+        const media = (event.target as HTMLElement)?.closest<HTMLElement>(
+          '.internal-embed[alt*="better-export-row"]',
+        );
+        if (media) this.enhanceMediaRows(media.parentElement ?? media);
+      },
+      true,
+    );
     this.registerDomEvent(
       document,
       "contextmenu",
@@ -166,6 +196,14 @@ export default class BetterExportPlugin extends Plugin {
       document,
       "pointerdown",
       (e) => {
+        const handle = (e.target as HTMLElement)?.closest<HTMLElement>(
+          ".better-export-media-resize-handle",
+        );
+        const media = handle?.parentElement;
+        if (media) {
+          this.startMediaResize(e, media);
+          return;
+        }
         if (
           this.popover &&
           !(e.target as HTMLElement)?.closest(".better-export-context-toolbar")
@@ -221,6 +259,9 @@ export default class BetterExportPlugin extends Plugin {
           ),
         ]) {
           template.logoPath = remap(template.logoPath || "");
+          if ("images" in template)
+            for (const image of template.images ?? [])
+              image.path = remap(image.path);
           if ("imagePath" in template)
             template.imagePath = remap(template.imagePath || "");
         }
@@ -239,6 +280,7 @@ export default class BetterExportPlugin extends Plugin {
     this.panel?.close();
     this.closePopover();
     this.folderStyle?.remove();
+    this.mediaStyle?.remove();
     document.body.removeClass("better-export-printing");
   }
   async loadSettings(): Promise<void> {
@@ -265,6 +307,10 @@ export default class BetterExportPlugin extends Plugin {
       documentCoverIds: s?.documentCoverIds ?? {},
       documentCoverValues: s?.documentCoverValues ?? {},
     };
+    this.settings.mediaBorderRadius = Math.min(
+      32,
+      Math.max(0, Number(this.settings.mediaBorderRadius) || 0),
+    );
   }
   private saving: Promise<void> = Promise.resolve();
   async save(): Promise<void> {
@@ -288,6 +334,16 @@ export default class BetterExportPlugin extends Plugin {
     const q = n.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
     this.folderStyle = document.head.createEl("style");
     this.folderStyle.textContent = `.nav-folder-title[data-path="${q}"],.nav-folder-title[data-path="${q}"]+.nav-folder-children,.nav-folder-title[data-path$="/${q}"],.nav-folder-title[data-path$="/${q}"]+.nav-folder-children{display:none!important}`;
+  }
+  applyMediaAppearance(): void {
+    const radius = Math.min(
+      32,
+      Math.max(0, Number(this.settings.mediaBorderRadius) || 0),
+    );
+    this.settings.mediaBorderRadius = radius;
+    this.mediaStyle?.remove();
+    this.mediaStyle = document.head.createEl("style");
+    this.mediaStyle.textContent = `body{--be-media-radius:${radius}px}`;
   }
   private folderName(): string {
     if (this.settings.attachmentFolderName.trim())
@@ -365,6 +421,124 @@ export default class BetterExportPlugin extends Plugin {
     e.setCursor({ line: matches[0]!, ch: 0 });
     return true;
   }
+  private enhanceMediaRows(root: HTMLElement): void {
+    const selector = '.internal-embed[alt*="better-export-row"]';
+    const media = [
+      ...(root.matches?.(selector) ? [root] : []),
+      ...Array.from(root.querySelectorAll<HTMLElement>(selector)),
+    ];
+    for (const item of media) {
+      const adjustment = readMediaAdjustment(item.getAttribute("alt") ?? "");
+      item.style.setProperty("--be-media-weight", String(adjustment.weight));
+      item.style.removeProperty("--be-media-height");
+      item.toggleClass("is-better-export-equal", adjustment.equal);
+      if (item.querySelector(":scope > .better-export-media-resize-handle"))
+        continue;
+      const handle = item.createDiv({
+        cls: "better-export-media-resize-handle",
+        attr: { "aria-label": "拖动等比调整图片", role: "slider" },
+      });
+      handle.title = "拖动等比调整图片";
+    }
+  }
+  private startMediaResize(event: PointerEvent, media: HTMLElement): void {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    this.closePopover();
+    const row = media.parentElement;
+    if (!row) return;
+    const items = Array.from(
+      row.querySelectorAll<HTMLElement>(
+        ':scope > .internal-embed[alt*="better-export-row"]',
+      ),
+    );
+    if (items.length < 2) return;
+    const start = readMediaAdjustment(media.getAttribute("alt") ?? ""),
+      startBox = media.getBoundingClientRect(),
+      rowBox = row.getBoundingClientRect(),
+      gap = Number.parseFloat(getComputedStyle(row).gap || "0") || 0,
+      available = Math.max(1, rowBox.width - gap * (items.length - 1)),
+      weights = items.map(
+        (item) => readMediaAdjustment(item.getAttribute("alt") ?? "").weight,
+      ),
+      otherWeight = Math.max(
+        1,
+        weights.reduce((sum, value) => sum + value, 0) - start.weight,
+      ),
+      aspect = startBox.width / Math.max(1, startBox.height),
+      originX = event.clientX,
+      originY = event.clientY;
+    let next = { ...start, height: null, equal: false };
+    media.addClass("is-better-export-resizing");
+    media.setAttribute(
+      "alt",
+      (media.getAttribute("alt") ?? "")
+        .replace(/\s*better-export-equal\b/g, "")
+        .trim(),
+    );
+    media.removeClass("is-better-export-equal");
+    const move = (pointer: PointerEvent) => {
+      const deltaX = pointer.clientX - originX,
+        deltaFromY = (pointer.clientY - originY) * aspect,
+        delta = Math.abs(deltaX) >= Math.abs(deltaFromY) ? deltaX : deltaFromY,
+        ratio = Math.min(
+          0.9,
+          Math.max(0.1, (startBox.width + delta) / available),
+        );
+      next = {
+        weight: Math.round((ratio * otherWeight) / (1 - ratio)),
+        height: null,
+        equal: false,
+      };
+      media.style.setProperty("--be-media-weight", String(next.weight));
+      media.style.removeProperty("--be-media-height");
+    };
+    const finish = () => {
+      document.removeEventListener("pointermove", move, true);
+      document.removeEventListener("pointerup", finish, true);
+      document.removeEventListener("pointercancel", finish, true);
+      media.removeClass("is-better-export-resizing");
+      this.saveMediaAdjustment(media, next);
+    };
+    document.addEventListener("pointermove", move, true);
+    document.addEventListener("pointerup", finish, true);
+    document.addEventListener("pointercancel", finish, true);
+  }
+  private saveMediaAdjustment(
+    media: HTMLElement,
+    adjustment: ReturnType<typeof readMediaAdjustment>,
+  ): void {
+    const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+    if (!view) return;
+    const raw = media.getAttribute("src") ?? media.getAttribute("data-href") ?? "";
+    let reference = raw;
+    try {
+      reference = decodeURIComponent(raw).replace(/\\/g, "/").split("?")[0] ?? raw;
+    } catch {}
+    const name = reference.split("/").at(-1) ?? reference,
+      matches: { line: number; embed: string }[] = [];
+    for (let line = 0; line < view.editor.lineCount(); line++)
+      for (const embed of mediaEmbeds(view.editor.getLine(line)))
+        if (embed.includes(reference) || embed.includes(name))
+          matches.push({ line, embed });
+    if (matches.length !== 1) {
+      new Notice("无法唯一定位这张图片，请在正文中右键图片后再试");
+      return;
+    }
+    const match = matches[0]!,
+      source = view.editor.getLine(match.line),
+      updated = source.replace(
+        match.embed,
+        setMediaAdjustment(match.embed, adjustment),
+      );
+    view.editor.replaceRange(
+      updated,
+      { line: match.line, ch: 0 },
+      { line: match.line, ch: source.length },
+    );
+    new Notice("图片尺寸已保存");
+  }
   private basePopover(x: number, y: number, title: string): HTMLElement {
     this.closePopover();
     const p = document.body.createDiv({ cls: "better-export-context-toolbar" });
@@ -397,19 +571,23 @@ export default class BetterExportPlugin extends Plugin {
       ...(src.includes("better-export-media") ? readMediaLayout(src) : {}),
     };
     const p = this.basePopover(x, y, "媒体排版");
-    select(
+    let syncMode = () => {};
+    const columns = select(
       p,
       { "1": "1列", "2": "2列", "3": "3列", "4": "4列" },
       String(o.columns),
-      (v) => (o.columns = Number(v) as 1 | 2 | 3 | 4),
+      (v) => {
+        o.columns = Number(v) as 1 | 2 | 3 | 4;
+        syncMode();
+      },
     );
-    select(
+    const alignment = select(
       p,
       { left: "左", center: "中", right: "右" },
       o.align,
       (v) => (o.align = v as typeof o.align),
     );
-    select(
+    const width = select(
       p,
       {
         auto: "原始",
@@ -423,6 +601,21 @@ export default class BetterExportPlugin extends Plugin {
       o.width,
       (v) => (o.width = v as typeof o.width),
     );
+    const modeHelp = p.createEl("small", {
+      cls: "better-export-media-help",
+    });
+    syncMode = () => {
+      const grouped = o.columns > 1;
+      alignment.disabled = grouped;
+      width.disabled = grouped;
+      columns.title = grouped ? "相邻图片将合并为同一组" : "单张图片";
+      modeHelp.setText(
+        grouped
+          ? "多列会合并相邻图片；拖动右下角可等比缩放，一键对齐可恢复整齐等高。"
+          : "单列可设置图片宽度和左右对齐。",
+      );
+    };
+    syncMode();
     select(
       p,
       { s: "窄", m: "中", l: "宽" },
@@ -435,6 +628,39 @@ export default class BetterExportPlugin extends Plugin {
     ck.checked = o.crop;
     l.appendText("4:3");
     ck.onchange = () => (o.crop = ck.checked);
+    const apply = (align = false) => {
+      try {
+        if ((selected ? e.getRange(from, to) : e.getLine(c.line)) !== src) {
+          new Notice("选区内容已变化，请重新选择后排版");
+          return;
+        }
+        let source = src,
+          replaceFrom = selected ? from : { line: c.line, ch: 0 },
+          replaceTo = selected ? to : { line: c.line, ch: src.length };
+        if (!selected && o.columns > 1 && count === 1) {
+          const lines = Array.from({ length: e.lineCount() }, (_, line) =>
+              e.getLine(line),
+            ),
+            block = adjacentMediaBlock(lines, c.line);
+          if (!block || block.count < 2) {
+            new Notice("多列排版至少需要两张相邻图片");
+            return;
+          }
+          source = block.source;
+          replaceFrom = { line: block.from, ch: 0 };
+          replaceTo = { line: block.to, ch: e.getLine(block.to).length };
+        }
+        let result = formatMediaLayout(source, o);
+        if (!result) return;
+        if (align) result = alignMediaGroup(result.markdown) ?? result;
+        selected
+          ? e.replaceRange(result.markdown, from, to)
+          : e.replaceRange(result.markdown, replaceFrom, replaceTo);
+        this.closePopover();
+      } catch (err) {
+        new Notice(err instanceof Error ? err.message : "排版失败");
+      }
+    };
     button(p, "清除排版", () => {
       if ((selected ? e.getRange(from, to) : e.getLine(c.line)) !== src) {
         new Notice("内容已变化，请重新选择");
@@ -447,31 +673,12 @@ export default class BetterExportPlugin extends Plugin {
       );
       this.closePopover();
     });
-    button(
-      p,
-      "应用",
-      () => {
-        try {
-          const r = formatMediaLayout(src, o);
-          if (!r) return;
-          if ((selected ? e.getRange(from, to) : e.getLine(c.line)) !== src) {
-            new Notice("选区内容已变化，请重新选择后排版");
-            return;
-          }
-          selected
-            ? e.replaceRange(r.markdown, from, to)
-            : e.replaceRange(
-                r.markdown,
-                { line: c.line, ch: 0 },
-                { line: c.line, ch: src.length },
-              );
-          this.closePopover();
-        } catch (err) {
-          new Notice(err instanceof Error ? err.message : "排版失败");
-        }
-      },
-      true,
-    );
+    const alignButton = button(p, "一键对齐", () => apply(true));
+    alignButton.disabled = o.columns === 1;
+    columns.addEventListener("change", () => {
+      alignButton.disabled = o.columns === 1;
+    });
+    button(p, "应用", () => apply(), true);
   }
   private textPopover(
     e: Editor,
@@ -558,6 +765,7 @@ class ExportPanel extends Component {
   private ready = false;
   private noteEntries = new Map<string, string>();
   private printButton: HTMLButtonElement | null = null;
+  private systemPrintButton: HTMLButtonElement | null = null;
   private renderChild: Component | null = null;
   private printCleanup: (() => void) | null = null;
   private targetView: MarkdownView | null = null;
@@ -752,7 +960,8 @@ class ExportPanel extends Component {
       });
     };
   }
-  private sidebar(): void {
+  private sidebar(resetScroll = false): void {
+    const scrollTop = resetScroll ? 0 : this.side.scrollTop;
     this.el.querySelector(".better-export-image-paste")?.remove();
     this.side.empty();
     const library = this.side.createEl("details", {
@@ -782,7 +991,7 @@ class ExportPanel extends Component {
       });
       b.onclick = () => {
         this.tab = k;
-        this.sidebar();
+        this.sidebar(true);
       };
     }
     this.tab === "layout"
@@ -796,6 +1005,7 @@ class ExportPanel extends Component {
       await this.plugin.save();
       new Notice("已保存默认版式");
     });
+    this.systemPrintButton = button(a, "系统打印", () => void this.systemPrint());
     this.printButton = button(a, "导出 PDF", () => void this.print(), true);
     this.updatePrintButton();
     const brand = this.side.createEl("a", {
@@ -805,6 +1015,7 @@ class ExportPanel extends Component {
     });
     brand.target = "_blank";
     if (this.tab === "cite") this.refreshCitationAudit();
+    this.side.scrollTop = scrollTop;
   }
   private layout(): void {
     group(this.side, "链接", (el) => {
@@ -1204,8 +1415,11 @@ class ExportPanel extends Component {
       );
     });
     group(this.side, "网格设计", (el) =>
-      this.gridEditor(el, template.rows, (change, rebuild) =>
-        this.updateHeader((t) => change(t.rows), rebuild),
+      this.gridEditor(
+        el,
+        template.rows,
+        (change, rebuild) => this.updateHeader((t) => change(t.rows), rebuild),
+        false,
       ),
     );
     const fields = headerFields(template);
@@ -1300,21 +1514,20 @@ class ExportPanel extends Component {
       cls: "better-export-header-actions",
     });
     button(actions, "新建空白", () => void this.createCover(blankCover()));
-    button(actions, "粘贴图片作为封面", () =>
-      this.imagePasteWindow("整页封面", async (path) => {
-        if (this.currentCover())
-          this.updateCover((t) => {
-            t.mode = "image";
-            t.imagePath = path;
-          }, true);
-        else
-          await this.createCover({
-            ...blankCover(),
-            mode: "image",
-            imagePath: path,
-            imageFit: "contain",
-          });
-      }),
+    button(actions, "添加封面图片", () =>
+      this.imagePasteWindow(
+        "封面图片",
+        () => {},
+        async (paths) => {
+          if (this.currentCover())
+            this.updateCover((t) => addCoverImages(t, paths), true);
+          else {
+            const t = { ...blankCover(), mode: "image" as const };
+            addCoverImages(t, paths);
+            await this.createCover(t);
+          }
+        },
+      ),
     );
     const template = this.currentCover();
     if (!template) return;
@@ -1346,10 +1559,17 @@ class ExportPanel extends Component {
       textSetting(el, "模板名称", template.name, (v) =>
         this.updateCover((t) => (t.name = v)),
       );
-      if (template.mode !== "image")
+      if (template.mode !== "image" && template.logoPath) {
         this.imageControl(el, "封面图片 / 徽标", template.logoPath, (path) =>
           this.updateCover((t) => (t.logoPath = path), true),
         );
+        button(el, "将旧徽标转为可排版图片", () =>
+          this.updateCover((t) => {
+            addCoverImages(t, [t.logoPath]);
+            t.logoPath = "";
+          }, true),
+        );
+      }
       toggleSetting(el, "显示封面页码", template.showPageNumber, (v) =>
         this.updateCover((t) => (t.showPageNumber = v)),
       );
@@ -1365,28 +1585,110 @@ class ExportPanel extends Component {
             t.mode = v as "grid" | "image";
           }, true),
       );
-      if (template.mode === "image") {
-        this.imageControl(el, "整页封面", template.imagePath ?? "", (path) =>
+    });
+    group(this.side, "封面图片排版", (el) => {
+      el.createEl("p", {
+        cls: "better-export-help",
+        text: "尺寸和位置以整张封面的百分比表示。可多次添加；列表后面的图片叠在上方，完整显示保持原图比例。",
+      });
+      const images = coverImages(template);
+      if (!images.length)
+        el.createEl("p", { text: "点击“添加封面图片”粘贴或多选本地图片。" });
+      images.forEach((image, index) => {
+        const card = el.createDiv({ cls: "better-export-cover-image-card" });
+        card.createEl("strong", {
+          text: "图片 " + (index + 1) + " · " + image.path.split("/").at(-1),
+        });
+        const edit = (change: (value: CoverImage) => void) =>
           this.updateCover((t) => {
-            t.imagePath = path;
-          }, true),
-        );
+            const items = coverImages(t);
+            const item = items.find((v) => v.id === image.id);
+            if (item) {
+              change(item);
+              t.images = items.map(normalizeCoverImage);
+              t.imagePath = "";
+            }
+          }, true);
+        this.imageControl(card, "图片", image.path, (path) => {
+          if (path) edit((v) => (v.path = path));
+          else
+            this.updateCover((t) => {
+              t.images = coverImages(t).filter((v) => v.id !== image.id);
+              t.imagePath = "";
+            }, true);
+        });
+        for (const [key, label, max] of [
+          ["width", "宽度 %", 100],
+          ["height", "高度 %", 100],
+          ["x", "左侧位置 %", 100 - image.width],
+          ["y", "顶部位置 %", 100 - image.height],
+        ] as const)
+          miniNumber(
+            card,
+            label,
+            image[key],
+            key === "width" || key === "height" ? 1 : 0,
+            max,
+            (value) =>
+              edit((v) => {
+                v[key] = value;
+              }),
+            1,
+            true,
+          );
         settingSelect(
-          el,
+          card,
           "图片适配",
           { contain: "完整显示", cover: "铺满裁切" },
-          template.imageFit ?? "contain",
+          image.fit,
           (v) =>
-            this.updateCover((t) => {
-              t.imageFit = v as "contain" | "cover";
+            edit((item) => {
+              item.fit = v as "contain" | "cover";
             }),
         );
-      }
+        const actions = card.createDiv({ cls: "better-export-header-actions" });
+        button(actions, "水平居中", () =>
+          edit((v) => {
+            v.x = (100 - v.width) / 2;
+          }),
+        );
+        button(actions, "铺满整页", () =>
+          edit((v) => {
+            v.x = 0;
+            v.y = 0;
+            v.width = 100;
+            v.height = 100;
+          }),
+        );
+        button(actions, "下移一层", () =>
+          this.updateCover((t) => {
+            const items = coverImages(t);
+            [items[index - 1], items[index]] = [
+              items[index]!,
+              items[index - 1]!,
+            ];
+            t.images = items;
+          }, true),
+        ).disabled = index === 0;
+        button(actions, "上移一层", () =>
+          this.updateCover((t) => {
+            const items = coverImages(t);
+            [items[index], items[index + 1]] = [
+              items[index + 1]!,
+              items[index]!,
+            ];
+            t.images = items;
+          }, true),
+        ).disabled = index === images.length - 1;
+      });
     });
     if (template.mode !== "image")
       group(this.side, "封面编排", (el) =>
-        this.gridEditor(el, template.rows, (change, rebuild) =>
-          this.updateCover((t) => change(t.rows), rebuild),
+        this.gridEditor(
+          el,
+          template.rows,
+          (change, rebuild) => this.updateCover((t) => change(t.rows), rebuild),
+          true,
         ),
       );
     const fields = headerFields(template);
@@ -1439,6 +1741,7 @@ class ExportPanel extends Component {
         id: crypto.randomUUID(),
         name: template.name + " · 本篇",
         rows: cloneRows(template.rows),
+        images: coverImages(template),
       };
       this.plugin.settings.coverTemplates.push(template);
       this.plugin.settings.documentCoverIds[this.file.path] = template.id;
@@ -1456,7 +1759,17 @@ class ExportPanel extends Component {
     parent: HTMLElement,
     rows: HeaderRow[],
     update: (change: (rows: HeaderRow[]) => void, rebuild?: boolean) => void,
+    cover = false,
   ): void {
+    if (cover) {
+      const height = this.paperHeightMm();
+      const guide = parent.createDiv({ cls: "better-export-spacing-guide" });
+      guide.createSpan({ text: "封面纵向标尺" });
+      guide.createDiv({ cls: "better-export-spacing-scale" });
+      guide.createEl("small", {
+        text: `0 — 25% — 50% — 75% — 100%（${Math.round(height)} mm）`,
+      });
+    }
     rows.forEach((row, ri) => {
       const rowEl = parent.createDiv({
         cls: "better-export-header-editor-row",
@@ -1479,15 +1792,30 @@ class ExportPanel extends Component {
       );
       remove.disabled = rows.length === 1;
       const spacing = rowEl.createDiv({ cls: "better-export-row-spacing" });
-      miniNumber(spacing, "行前", row.gapBefore, 0, 80, (value) =>
-        update((all) => {
-          if (all[ri]) all[ri]!.gapBefore = value;
-        }),
+      const gapMax = cover
+        ? Math.max(this.paperHeightMm(), row.gapBefore, row.gapAfter)
+        : Math.max(120, row.gapBefore, row.gapAfter);
+      spacingControl(
+        spacing,
+        "行前",
+        row.gapBefore,
+        gapMax,
+        (value) =>
+          update((all) => {
+            if (all[ri]) all[ri]!.gapBefore = value;
+          }),
+        cover ? this.paperHeightMm() : undefined,
       );
-      miniNumber(spacing, "行后", row.gapAfter, 0, 80, (value) =>
-        update((all) => {
-          if (all[ri]) all[ri]!.gapAfter = value;
-        }),
+      spacingControl(
+        spacing,
+        "行后",
+        row.gapAfter,
+        gapMax,
+        (value) =>
+          update((all) => {
+            if (all[ri]) all[ri]!.gapAfter = value;
+          }),
+        cover ? this.paperHeightMm() : undefined,
       );
       const cells = rowEl.createDiv({ cls: "better-export-header-cells" });
       row.cells.forEach((cell, ci) => {
@@ -1580,6 +1908,11 @@ class ExportPanel extends Component {
       true,
     );
   }
+  private paperHeightMm(): number {
+    const portrait: [number, number] =
+      this.profile.pageSize === "A4" ? [210, 297] : [215.9, 279.4];
+    return this.profile.orientation === "portrait" ? portrait[1] : portrait[0];
+  }
   private imageControl(
     parent: HTMLElement,
     label: string,
@@ -1605,6 +1938,7 @@ class ExportPanel extends Component {
   private imagePasteWindow(
     label: string,
     onSaved: (path: string) => void,
+    onMany?: (paths: string[]) => void | Promise<void>,
   ): void {
     this.el.querySelector(".better-export-image-paste")?.remove();
     const box = this.el.createDiv({
@@ -1619,37 +1953,62 @@ class ExportPanel extends Component {
       text: "点击这里，然后粘贴图片",
     });
     zone.tabIndex = 0;
-    const accept = async (blob: Blob) => {
+    let busy = false;
+    const accept = async (blobs: Blob[]) => {
+      if (busy) return;
+      if (!blobs.length) {
+        new Notice("没有可导入的图片");
+        return;
+      }
+      busy = true;
+      zone.setText("正在保存图片…");
       try {
-        const path = await this.savePastedImage(blob, label);
-        await onSaved(path);
+        const paths: string[] = [];
+        for (const blob of onMany ? blobs : blobs.slice(0, 1))
+          paths.push(await this.savePastedImage(blob, label));
+        if (onMany) await onMany(paths);
+        else await onSaved(paths[0]!);
         box.remove();
-        new Notice(`图片已保存：${path}`);
+        new Notice("已添加 " + paths.length + " 张图片");
       } catch (error) {
         console.error(error);
-        new Notice("图片保存失败");
+        new Notice("图片保存失败，请重试");
+        zone.setText("保存失败，可重新粘贴或选择图片");
+      } finally {
+        busy = false;
       }
     };
     zone.onpaste = (event) => {
       event.preventDefault();
-      const file = Array.from(event.clipboardData?.files ?? []).find((item) =>
-        item.type.startsWith("image/"),
+      void accept(
+        Array.from(event.clipboardData?.files ?? []).filter((f) =>
+          f.type.startsWith("image/"),
+        ),
       );
-      if (file) void accept(file);
-      else new Notice("剪贴板中没有图片");
     };
     const actions = box.createDiv({ cls: "better-export-zotero-actions" });
+    const picker = box.createEl("input", {
+      attr: { type: "file", accept: "image/*" },
+    });
+    picker.hidden = true;
+    picker.multiple = !!onMany;
+    picker.onchange = () =>
+      void accept(
+        Array.from(picker.files ?? []).filter((f) =>
+          f.type.startsWith("image/"),
+        ),
+      );
+    button(actions, onMany ? "选择图片（可多选）" : "选择图片", () =>
+      picker.click(),
+    );
     button(actions, "读取剪贴板", async () => {
       try {
-        const items = await navigator.clipboard.read();
-        for (const item of items) {
-          const type = item.types.find((value) => value.startsWith("image/"));
-          if (type) {
-            await accept(await item.getType(type));
-            return;
-          }
+        const blobs: Blob[] = [];
+        for (const item of await navigator.clipboard.read()) {
+          const type = item.types.find((t) => t.startsWith("image/"));
+          if (type) blobs.push(await item.getType(type));
         }
-        new Notice("剪贴板中没有图片");
+        await accept(blobs);
       } catch {
         new Notice("无法直接读取，请在粘贴区按 Ctrl/Cmd+V");
       }
@@ -2167,15 +2526,18 @@ class ExportPanel extends Component {
     }, 180);
   }
   private updatePrintButton(): void {
-    if (this.printButton) {
-      this.printButton.disabled =
+    for (const outputButton of [this.printButton, this.systemPrintButton]) {
+      if (!outputButton) continue;
+      outputButton.disabled =
         this.dirty ||
         this.isRendering ||
         !this.ready ||
         Boolean(this.printCleanup);
-      this.printButton.title = this.printButton.disabled
+      outputButton.title = outputButton.disabled
         ? "等待有效预览；请先处理提示的问题"
-        : "导出当前预览";
+        : outputButton === this.printButton
+          ? "直接保存当前预览为 PDF"
+          : "打开系统打印窗口";
     }
   }
   private async render(): Promise<void> {
@@ -2371,13 +2733,22 @@ class ExportPanel extends Component {
       cls: "better-export-page better-export-cover-page",
     });
     page.style.animationDelay = "0ms";
+    for (const image of coverImages(template)) {
+      this.renderTemplateImage(page, image.path, "封面图片");
+      const img = page.lastElementChild as HTMLImageElement;
+      img.classList.add("better-export-cover-layer");
+      Object.assign(img.style, {
+        position: "absolute",
+        left: image.x + "%",
+        top: image.y + "%",
+        width: image.width + "%",
+        height: image.height + "%",
+        objectFit: image.fit,
+        maxWidth: "none",
+      });
+    }
     if (template.mode === "image") {
-      if (!template.imagePath)
-        throw new LayoutError("请粘贴或选择整页封面图片");
       page.addClass("better-export-image-cover");
-      this.renderTemplateImage(page, template.imagePath, "封面");
-      page.querySelector("img")!.style.objectFit =
-        template.imageFit ?? "contain";
       if (template.showPageNumber)
         page.createDiv({ cls: "better-export-print-footer", text: "1" });
       return;
@@ -2473,18 +2844,103 @@ class ExportPanel extends Component {
     page.notes.toggleClass("is-visible", page.notes.childElementCount > 0);
   }
   private async print(): Promise<void> {
+    if (!(await this.outputReady())) return;
+    const electron = (
+        window as unknown as {
+          electron?: {
+            remote?: {
+              dialog?: {
+                showSaveDialog: (options: unknown) => Promise<{
+                  canceled?: boolean;
+                  filePath?: string;
+                }>;
+              };
+              getCurrentWebContents?: () => {
+                printToPDF: (options: unknown) => Promise<Uint8Array | ArrayBuffer>;
+              };
+              getCurrentWindow?: () => {
+                webContents?: {
+                  printToPDF: (options: unknown) => Promise<Uint8Array | ArrayBuffer>;
+                };
+              };
+              require?: (name: string) => {
+                promises?: {
+                  writeFile: (path: string, data: Uint8Array) => Promise<void>;
+                };
+              };
+            };
+          };
+        }
+      ).electron,
+      remote = electron?.remote,
+      contents =
+        remote?.getCurrentWebContents?.() ??
+        remote?.getCurrentWindow?.().webContents,
+      fs = remote?.require?.("fs");
+    if (!remote?.dialog?.showSaveDialog || !contents?.printToPDF || !fs?.promises) {
+      new Notice("当前 Obsidian 环境不支持直接生成 PDF，请使用“系统打印”");
+      return;
+    }
+    const chosen = await remote.dialog.showSaveDialog({
+      title: "导出 PDF",
+      defaultPath: this.defaultPdfPath(),
+      filters: [{ name: "PDF 文件", extensions: ["pdf"] }],
+      properties: ["showOverwriteConfirmation", "createDirectory"],
+    });
+    if (chosen.canceled || !chosen.filePath) return;
+    const clean = this.enterPrintMode(""),
+      savedPath = chosen.filePath;
+    let succeeded = false;
+    try {
+      await document.fonts?.ready;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      const pdf = await contents.printToPDF({
+        printBackground: true,
+        preferCSSPageSize: true,
+        generateTaggedPDF: true,
+        generateDocumentOutline: true,
+      });
+      await fs.promises.writeFile(
+        savedPath,
+        pdf instanceof ArrayBuffer ? new Uint8Array(pdf) : pdf,
+      );
+      succeeded = true;
+      new Notice(`PDF 已保存：${savedPath}`);
+    } catch (error) {
+      console.error("Better Export PDF export failed", error);
+      new Notice("PDF 导出失败，请检查保存位置后重试");
+    } finally {
+      clean();
+      if (!this.closed)
+        this.status(succeeded ? "PDF 已保存" : "PDF 导出失败", succeeded ? "is-ready" : "is-error");
+    }
+  }
+  private async systemPrint(): Promise<void> {
+    if (!(await this.outputReady())) return;
+    const clean = this.enterPrintMode("已返回预览；打印结果以系统窗口为准");
+    addEventListener("afterprint", clean, { once: true });
+    try {
+      window.print();
+    } catch {
+      clean();
+      new Notice("无法打开打印窗口，请重试");
+    }
+  }
+  private async outputReady(): Promise<boolean> {
     const latest =
       this.documentView()?.editor.getValue() ??
       (await this.plugin.app.vault.read(this.file));
-    if (this.closed) return;
+    if (this.closed) return false;
     if (latest !== this.markdown) {
       this.schedule();
       new Notice("正文已变化，请等待预览同步后导出");
-      return;
+      return false;
     }
     if (this.dirty || this.isRendering || !this.ready || this.printCleanup) {
       new Notice("请等待有效预览后导出");
-      return;
+      return false;
     }
     const errors = citationProblems(
       latest,
@@ -2492,8 +2948,11 @@ class ExportPanel extends Component {
     );
     if (errors.length) {
       this.schedule();
-      return;
+      return false;
     }
+    return true;
+  }
+  private enterPrintMode(message: string): () => void {
     const title = document.title;
     document.title = this.file.basename;
     document.body.addClass("better-export-printing");
@@ -2503,20 +2962,22 @@ class ExportPanel extends Component {
       document.body.removeClass("better-export-printing");
       this.el.removeClass("is-print-target");
       removeEventListener("afterprint", clean);
-      this.printCleanup = null;
+      if (this.printCleanup === clean) this.printCleanup = null;
       this.updatePrintButton();
-      if (!this.closed)
-        this.status("已返回预览；保存结果以打印窗口为准", "is-ready");
+      if (!this.closed && message) this.status(message, "is-ready");
     };
     this.printCleanup = clean;
     this.updatePrintButton();
-    addEventListener("afterprint", clean, { once: true });
-    try {
-      window.print();
-    } catch {
-      clean();
-      new Notice("无法打开打印窗口，请重试");
-    }
+    return clean;
+  }
+  private defaultPdfPath(): string {
+    const safeName = this.file.basename.replace(/[<>:"/\\|?*]/g, "_") + ".pdf",
+      adapter = this.plugin.app.vault.adapter as
+        | (typeof this.plugin.app.vault.adapter & { getBasePath?: () => string })
+        | undefined,
+      base = adapter?.getBasePath?.().replace(/\\/g, "/").replace(/\/$/, "") ?? "",
+      folder = this.file.parent?.path.replace(/^\/+|\/+$/g, "") ?? "";
+    return base ? `${base}/${folder ? folder + "/" : ""}${safeName}` : safeName;
   }
   private status(
     text: string,
@@ -2571,6 +3032,20 @@ class SettingsTab extends PluginSettingTab {
           this.p.applyFolderVisibility();
           await this.p.save();
         }),
+      );
+    new Setting(this.containerEl)
+      .setName("正文图片圆角")
+      .setDesc("应用于编辑器、阅读视图和 PDF 导出；设为 0 可关闭圆角")
+      .addSlider((slider) =>
+        slider
+          .setLimits(0, 32, 1)
+          .setDynamicTooltip()
+          .setValue(this.p.settings.mediaBorderRadius)
+          .onChange(async (value) => {
+            this.p.settings.mediaBorderRadius = value;
+            this.p.applyMediaAppearance();
+            await this.p.save();
+          }),
       );
   }
 }
@@ -2664,6 +3139,7 @@ function miniNumber(
   max: number,
   onChange: (value: number) => void,
   step = 1,
+  commitOnChange = false,
 ): void {
   const wrap = parent.createEl("label", { cls: "better-export-mini-number" });
   wrap.createSpan({ text: label });
@@ -2673,11 +3149,59 @@ function miniNumber(
   input.max = String(max);
   input.step = String(step);
   input.value = String(value);
-  wheelNumber(input);
-  input.oninput = () => {
+  wheelNumber(input, commitOnChange ? "change" : "input");
+  input[commitOnChange ? "onchange" : "oninput"] = () => {
     const next = Number(input.value);
     if (Number.isFinite(next)) onChange(Math.max(min, Math.min(max, next)));
   };
+}
+function spacingControl(
+  parent: HTMLElement,
+  label: string,
+  value: number,
+  max: number,
+  onChange: (value: number) => void,
+  pageHeight?: number,
+): void {
+  const wrap = parent.createDiv({ cls: "better-export-spacing-control" }),
+    heading = wrap.createDiv(),
+    title = heading.createSpan({ text: label }),
+    readout = heading.createEl("small"),
+    controls = wrap.createDiv(),
+    slider = controls.createEl("input"),
+    number = controls.createEl("input");
+  const display = (next: number) => {
+    title.setText(label);
+    readout.setText(
+      pageHeight
+        ? `${next.toFixed(next % 1 ? 1 : 0)} mm · ${Math.round((next / pageHeight) * 100)}% 页高`
+        : `${next.toFixed(next % 1 ? 1 : 0)} mm`,
+    );
+  };
+  slider.type = "range";
+  slider.min = "0";
+  slider.max = String(max);
+  slider.step = "1";
+  slider.value = String(value);
+  number.type = "number";
+  number.min = "0";
+  number.max = String(max);
+  number.step = "1";
+  number.value = String(value);
+  display(value);
+  slider.oninput = () => {
+    number.value = slider.value;
+    display(Number(slider.value));
+  };
+  slider.onchange = () => onChange(Number(slider.value));
+  number.oninput = () => {
+    const next = Math.max(0, Math.min(max, Number(number.value) || 0));
+    slider.value = String(next);
+    display(next);
+  };
+  number.onchange = () =>
+    onChange(Math.max(0, Math.min(max, Number(number.value) || 0)));
+  wheelNumber(number, "change");
 }
 function cloneRows(rows: HeaderRow[]): HeaderRow[] {
   return rows.map((row) => ({
@@ -2712,13 +3236,14 @@ function select(
   o: Record<string, string>,
   v: string,
   c: (v: string) => void,
-): void {
+): HTMLSelectElement {
   const s = p.createEl("select");
   for (const [k, n] of Object.entries(o))
     s.createEl("option", { value: k, text: n });
   s.value = v;
   s.onchange = () => c(s.value);
   wheelSelect(s);
+  return s;
 }
 function toggle(p: HTMLElement, n: string, c: (v: boolean) => void): void {
   const b = button(p, n, () => {
@@ -2731,14 +3256,14 @@ function place(e: HTMLElement, x: number, y: number): void {
   e.style.left = `${Math.max(6, Math.min(x, innerWidth - r.width - 6))}px`;
   e.style.top = `${Math.max(6, Math.min(y, innerHeight - r.height - 6))}px`;
 }
-function wheelNumber(input: HTMLInputElement): void {
+function wheelNumber(input: HTMLInputElement, eventName = "input"): void {
   let timer = 0;
   input.addEventListener(
     "wheel",
     (event) => {
       event.preventDefault();
       event.deltaY < 0 ? input.stepUp() : input.stepDown();
-      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event(eventName, { bubbles: true }));
       input.addClass("is-wheel-adjusting");
       clearTimeout(timer);
       timer = window.setTimeout(
